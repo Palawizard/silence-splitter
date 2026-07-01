@@ -27,22 +27,6 @@ async function extractWithFilter(filePath: string, filter: string): Promise<Floa
   return bufferToFloat32(pcmBuffer)
 }
 
-function keptSeconds(
-  durationSeconds: number,
-  samples: Float32Array,
-  sampleRate: number,
-  thresholdDb: number
-): { kept: number; thresholdDb: number; displayDb: number } {
-  const params = getPresetById('gaming-energetic').params
-  const pcm = { samples, sampleRate, durationSeconds }
-  const analysis = analyzeAudio(pcm, params)
-  let silent = detectSilentRegionsFromRms(analysis.rmsValues, sampleRate, dbFsToRms(thresholdDb))
-  silent = reclassifyShortActiveAsSilent(silent, durationSeconds, params.ignoreDetectionsShorterThanSeconds)
-  const segments = buildKeepSegments(durationSeconds, silent, params)
-  const kept = segments.reduce((s, x) => s + (x.sourceEndSeconds - x.sourceStartSeconds), 0)
-  return { kept, thresholdDb: analysis.thresholdDb, displayDb: toTimeboltDisplayDb(analysis.thresholdDb) }
-}
-
 async function main(): Promise<void> {
   const filePath = process.argv[2]
   if (!filePath) {
@@ -70,8 +54,6 @@ async function main(): Promise<void> {
     let peak = 0
     for (let i = 0; i < samples.length; i++) peak = Math.max(peak, Math.abs(samples[i]))
 
-    const result = keptSeconds(media.durationSeconds, samples, 16000, -999)
-    // use auto threshold from analyzeAudio
     const params = getPresetById('gaming-energetic').params
     const analysis = analyzeAudio({ samples, sampleRate: 16000, durationSeconds: media.durationSeconds }, params)
     let silent = detectSilentRegionsFromRms(analysis.rmsValues, 16000, analysis.threshold)

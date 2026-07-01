@@ -5,8 +5,8 @@
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
-  analyzeAudio,
   computePeakWindows,
+  computeAutoThresholdDb,
   dbFsToRms,
   peakNormalize,
   referenceNormalize,
@@ -88,16 +88,10 @@ async function main(): Promise<void> {
 
   for (const mode of ['peak', 'reference'] as NormMode[]) {
     const levelValues = levelsForPcm(pcmData, mode)
-    const analysis = analyzeAudio(
-      {
-        ...pcmData,
-        samples: mode === 'reference' ? referenceNormalize(pcmData.samples, pcmData.sampleRate) : peakNormalize(pcmData.samples)
-      },
-      params
-    )
-    const autoKept = keptSeconds(media.durationSeconds, levelValues, pcmData.sampleRate, params, analysis.thresholdDb)
+    const thresholdDb = computeAutoThresholdDb(levelValues, params.thresholdBias)
+    const autoKept = keptSeconds(media.durationSeconds, levelValues, pcmData.sampleRate, params, thresholdDb)
 
-    console.log(`[${mode}] auto=${analysis.thresholdDb.toFixed(1)} dB (UI ${toTimeboltDisplayDb(analysis.thresholdDb).toFixed(0)}) → kept ${formatDuration(autoKept)}`)
+    console.log(`[${mode}] auto=${thresholdDb.toFixed(1)} dB (UI ${toTimeboltDisplayDb(thresholdDb).toFixed(0)}) → kept ${formatDuration(autoKept)}`)
 
     if (timeboltDb !== undefined) {
       const internalDb = timeboltDb - 8
@@ -111,7 +105,7 @@ async function main(): Promise<void> {
       console.log(`[${mode}] fixed UI ${timeboltDb} dB → kept ${formatDuration(fixedKept)}`)
     }
 
-    let bestDb = analysis.thresholdDb
+    let bestDb = thresholdDb
     let bestDelta = Math.abs(autoKept - targetKeptSeconds)
     for (let db = -60; db <= -28; db += 0.5) {
       const kept = keptSeconds(media.durationSeconds, levelValues, pcmData.sampleRate, params, db)

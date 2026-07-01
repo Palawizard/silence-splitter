@@ -10,7 +10,8 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test:epic1": "tsx scripts/test-epic1.ts",
-    "test:epic2": "tsx scripts/test-epic2.ts"
+    "test:epic2": "tsx scripts/test-epic2.ts",
+    "compare:timebolt": "tsx scripts/compare-timebolt-cuts.ts"
   },
   "dependencies": {
     "react": "^19.1.0",
