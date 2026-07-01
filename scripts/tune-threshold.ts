@@ -4,7 +4,7 @@
  */
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { peakNormalize, computePeakWindows, dbFsToRms } from '../src/core/audio'
+import { peakNormalize, computeRmsWindows, dbFsToRms } from '../src/core/audio'
 import { detectSilentRegionsFromRms, reclassifyShortActiveAsSilent } from '../src/core/audio/regions'
 import { buildKeepSegments } from '../src/core/segments'
 import { getPresetById } from '../src/core/presets'
@@ -83,7 +83,7 @@ async function main(): Promise<void> {
       media.durationSeconds,
       media.audioStreams.map((s) => s.index)
     )
-    const levels = computePeakWindows(peakNormalize(pcm.samples), pcm.sampleRate)
+    const levels = computeRmsWindows(peakNormalize(pcm.samples), pcm.sampleRate)
     const dbs = levels.map(rmsToDbFs).sort((a, b) => a - b)
     datasets.push({ ...ref, durationSeconds: media.durationSeconds, levels, dbs, sampleRate: pcm.sampleRate })
     const p = (q: number) => dbs[Math.floor(dbs.length * q)]

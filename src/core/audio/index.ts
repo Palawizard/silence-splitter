@@ -2,7 +2,11 @@ export { rmsToDbFs, dbFsToRms, toTimeboltDisplayDb, TIMEBOLT_DISPLAY_DB_OFFSET }
 export { computePeaks, normalizePeaksForDisplay, resamplePeaksToColumns } from './peaks'
 export { buildWaveformEnvelope, buildAnalysisWaveformEnvelope, defaultPreviewBucketCount } from './waveform-envelope'
 export type { PcmAudio, SilentRegion } from './types'
-export { RMS_WINDOW_MS } from './types'
+export {
+  DETECTION_HOP_MS,
+  DETECTION_WINDOW_MS,
+  RMS_WINDOW_MS
+} from './types'
 export { peakNormalize, referenceNormalize } from './normalize'
 export { prepareAnalysisSamples } from './prepare-samples'
 export { computePeakWindows } from './levels'
@@ -12,6 +16,7 @@ export {
   detectSilentRegionsFromRms,
   detectSilentRegionsFromRmsDb,
   mergeAdjacentRegions,
-  reclassifyShortActiveAsSilent
+  reclassifyShortActiveAsSilent,
+  stabilizeSilenceMask
 } from './regions'
 export { analyzeAudio, type AudioAnalysisResult } from './detect'

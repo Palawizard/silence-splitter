@@ -6,7 +6,7 @@ import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
   analyzeAudio,
-  computePeakWindows,
+  computeRmsWindows,
   dbFsToRms,
   peakNormalize
 } from '../src/core/audio'
@@ -68,7 +68,7 @@ async function main(): Promise<void> {
   const trackIndices = media.audioStreams.map((s) => s.index)
   const pcmData = await pcm.extractAnalysisPcm(videoPath, media.durationSeconds, trackIndices)
   const normalized = peakNormalize(pcmData.samples)
-  const levelValues = computePeakWindows(normalized, pcmData.sampleRate)
+  const levelValues = computeRmsWindows(normalized, pcmData.sampleRate)
   const analysis = analyzeAudio(pcmData, params)
 
   console.log(`Duration: ${formatDuration(media.durationSeconds)}`)

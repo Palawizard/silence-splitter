@@ -1,21 +1,23 @@
-import { RMS_WINDOW_MS } from './types'
+import { DETECTION_HOP_MS, DETECTION_WINDOW_MS } from './types'
 
 /** Compute RMS energy per fixed window (linear amplitude, 0–1 range for normalized PCM). */
 export function computeRmsWindows(
   samples: Float32Array,
   sampleRate: number,
-  windowMs: number = RMS_WINDOW_MS
+  windowMs: number = DETECTION_WINDOW_MS,
+  hopMs: number = DETECTION_HOP_MS
 ): number[] {
   if (samples.length === 0 || sampleRate <= 0) {
     return []
   }
 
   const windowSamples = Math.max(1, Math.round((sampleRate * windowMs) / 1000))
-  const windowCount = Math.ceil(samples.length / windowSamples)
+  const hopSamples = Math.max(1, Math.round((sampleRate * hopMs) / 1000))
+  const windowCount = Math.max(1, Math.ceil((samples.length - windowSamples) / hopSamples) + 1)
   const rmsValues = new Array<number>(windowCount)
 
   for (let window = 0; window < windowCount; window++) {
-    const start = window * windowSamples
+    const start = window * hopSamples
     const end = Math.min(samples.length, start + windowSamples)
     let sumSquares = 0
 
@@ -35,10 +37,12 @@ export function computeRmsWindows(
 export function windowCenterSeconds(
   windowIndex: number,
   sampleRate: number,
-  windowMs: number = RMS_WINDOW_MS
+  windowMs: number = DETECTION_WINDOW_MS,
+  hopMs: number = DETECTION_HOP_MS
 ): number {
   const windowSamples = Math.max(1, Math.round((sampleRate * windowMs) / 1000))
-  const centerSample = windowIndex * windowSamples + windowSamples / 2
+  const hopSamples = Math.max(1, Math.round((sampleRate * hopMs) / 1000))
+  const centerSample = windowIndex * hopSamples + windowSamples / 2
   return centerSample / sampleRate
 }
 
@@ -46,11 +50,13 @@ export function windowCenterSeconds(
 export function rmsWindowDurationSeconds(
   windowCount: number,
   sampleRate: number,
-  windowMs: number = RMS_WINDOW_MS
+  windowMs: number = DETECTION_WINDOW_MS,
+  hopMs: number = DETECTION_HOP_MS
 ): number {
   if (windowCount === 0) {
     return 0
   }
   const windowSamples = Math.max(1, Math.round((sampleRate * windowMs) / 1000))
-  return (windowCount * windowSamples) / sampleRate
+  const hopSamples = Math.max(1, Math.round((sampleRate * hopMs) / 1000))
+  return ((windowCount - 1) * hopSamples + windowSamples) / sampleRate
 }

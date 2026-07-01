@@ -1,4 +1,8 @@
-import { RMS_WINDOW_MS, type SilentRegion } from './types'
+import {
+  DETECTION_HOP_MS,
+  DETECTION_WINDOW_MS,
+  type SilentRegion
+} from './types'
 import { rmsWindowDurationSeconds, windowCenterSeconds } from './rms'
 import { dbFsToRms, rmsToDbFs } from './db'
 
@@ -15,31 +19,37 @@ export function detectSilentRegionsFromRms(
   rmsValues: number[],
   sampleRate: number,
   threshold: number,
-  windowMs: number = RMS_WINDOW_MS
+  windowMs: number = DETECTION_WINDOW_MS,
+  hopMs: number = DETECTION_HOP_MS
 ): SilentRegion[] {
   if (rmsValues.length === 0) {
     return []
   }
 
-  const windowSeconds = windowMs / 1000
+  const rawMask = rmsValues.map((value) => windowIsSilent(value, threshold))
+  const silentMask = stabilizeSilenceMask(rawMask)
   const regions: SilentRegion[] = []
   let regionStart: number | null = null
 
   for (let i = 0; i < rmsValues.length; i++) {
-    const silent = windowIsSilent(rmsValues[i], threshold)
-    const windowStart = windowCenterSeconds(i, sampleRate, windowMs) - windowSeconds / 2
+    const silent = silentMask[i]
+    const boundary = windowCenterSeconds(i, sampleRate, windowMs, hopMs)
 
     if (silent && regionStart === null) {
-      regionStart = Math.max(0, windowStart)
+      regionStart = i === 0 ? 0 : boundary
     } else if (!silent && regionStart !== null) {
-      const windowEnd = windowCenterSeconds(i, sampleRate, windowMs) - windowSeconds / 2
-      regions.push({ startSeconds: regionStart, endSeconds: windowEnd })
+      regions.push({ startSeconds: regionStart, endSeconds: boundary })
       regionStart = null
     }
   }
 
   if (regionStart !== null) {
-    const analyzedEnd = rmsWindowDurationSeconds(rmsValues.length, sampleRate, windowMs)
+    const analyzedEnd = rmsWindowDurationSeconds(
+      rmsValues.length,
+      sampleRate,
+      windowMs,
+      hopMs
+    )
     regions.push({ startSeconds: regionStart, endSeconds: analyzedEnd })
   }
 
@@ -50,14 +60,31 @@ export function detectSilentRegionsFromRmsDb(
   rmsValues: number[],
   sampleRate: number,
   thresholdDb: number,
-  windowMs: number = RMS_WINDOW_MS
+  windowMs: number = DETECTION_WINDOW_MS,
+  hopMs: number = DETECTION_HOP_MS
 ): SilentRegion[] {
   return detectSilentRegionsFromRms(
     rmsValues,
     sampleRate,
     dbFsToRms(thresholdDb),
-    windowMs
+    windowMs,
+    hopMs
   )
+}
+
+/** Remove isolated 10 ms classification flips without shifting sustained boundaries. */
+export function stabilizeSilenceMask(mask: boolean[]): boolean[] {
+  if (mask.length < 3) {
+    return [...mask]
+  }
+
+  const stabilized = [...mask]
+  for (let i = 1; i < mask.length - 1; i++) {
+    if (mask[i - 1] === mask[i + 1] && mask[i] !== mask[i - 1]) {
+      stabilized[i] = mask[i - 1]
+    }
+  }
+  return stabilized
 }
 
 export function mergeAdjacentRegions(
@@ -128,7 +155,7 @@ export function reclassifyShortActiveAsSilent(
 
   for (const active of activeRegions) {
     const duration = active.endSeconds - active.startSeconds
-    if (duration > 0 && duration < minActiveSeconds) {
+    if (duration > 0 && duration <= minActiveSeconds + 1e-9) {
       expandedSilent.push({ ...active })
     }
   }

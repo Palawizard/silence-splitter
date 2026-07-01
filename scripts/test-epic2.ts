@@ -3,7 +3,12 @@
  */
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { analyzeAudio } from '../src/core/audio'
+import {
+  analyzeAudio,
+  computeRmsWindows,
+  reclassifyShortActiveAsSilent,
+  stabilizeSilenceMask
+} from '../src/core/audio'
 import { buildTimelinePreviewData, deriveCutRegions } from '../src/core/preview'
 import { buildKeepSegments } from '../src/core/segments'
 import { secondsToFrame, secondsToTimecode, frameToSeconds } from '../src/core/time'
@@ -76,6 +81,31 @@ async function main(): Promise<void> {
     'secondsToTimecode',
     secondsToTimecode(65, 25) === '00:01:05:00',
     '65 s @ 25 fps → 00:01:05:00'
+  )
+
+  const hopWindows = computeRmsWindows(new Float32Array(100), 1000)
+  record(
+    'analysis — 10 ms hop',
+    hopWindows.length === 9,
+    `windows=${hopWindows.length}`
+  )
+  record(
+    'analysis — isolated classification flip is stabilized',
+    stabilizeSilenceMask([true, false, true]).every(Boolean),
+    'silent/active/silent → silent'
+  )
+  const exactShortActive = reclassifyShortActiveAsSilent(
+    [
+      { startSeconds: 0, endSeconds: 1 },
+      { startSeconds: 1.35, endSeconds: 2 }
+    ],
+    2,
+    0.35
+  )
+  record(
+    'analysis — exact minimum active duration is ignored',
+    exactShortActive.length === 1 && exactShortActive[0].endSeconds === 2,
+    `silent regions=${exactShortActive.length}`
   )
 
   // --- synthetic silence detection ---
@@ -180,12 +210,22 @@ async function main(): Promise<void> {
   const multiPcmOne = await pcm.extractAnalysisPcm(multiPath, multi.durationSeconds, [allTracks[0]])
   const multiAnalysisAll = analyzeAudio(multiPcmAll, params)
   const multiAnalysisOne = analyzeAudio(multiPcmOne, params)
+  const comparedSampleCount = Math.min(
+    10000,
+    multiPcmAll.samples.length,
+    multiPcmOne.samples.length
+  )
+  let mixedSamplesDiffer = false
+  for (let i = 0; i < comparedSampleCount; i++) {
+    if (Math.abs(multiPcmAll.samples[i] - multiPcmOne.samples[i]) > 1e-6) {
+      mixedSamplesDiffer = true
+      break
+    }
+  }
   record(
-    'multi-track.mp4 — track mix affects threshold',
-    multiPcmAll.samples.length > 0 &&
-      (multiAnalysisAll.threshold !== multiAnalysisOne.threshold ||
-        multiAnalysisAll.silentRegions.length !== multiAnalysisOne.silentRegions.length),
-    `all threshold=${multiAnalysisAll.threshold.toFixed(4)}, one=${multiAnalysisOne.threshold.toFixed(4)}`
+    'multi-track.mp4 — track selection changes analysis PCM',
+    comparedSampleCount > 0 && mixedSamplesDiffer,
+    `all regions=${multiAnalysisAll.silentRegions.length}, one=${multiAnalysisOne.silentRegions.length}`
   )
 
   const failed = checks.filter((c) => !c.pass)

@@ -5,7 +5,7 @@
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
-  computePeakWindows,
+  computeRmsWindows,
   computeAutoThresholdDb,
   dbFsToRms,
   peakNormalize,
@@ -56,7 +56,7 @@ type NormMode = 'peak' | 'reference'
 
 function levelsForPcm(pcm: PcmAudio, mode: NormMode): number[] {
   const samples = mode === 'reference' ? referenceNormalize(pcm.samples) : peakNormalize(pcm.samples)
-  return computePeakWindows(samples, pcm.sampleRate)
+  return computeRmsWindows(samples, pcm.sampleRate)
 }
 
 async function main(): Promise<void> {
