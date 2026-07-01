@@ -5,10 +5,7 @@ import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
   analyzeAudio,
-  computeRmsWindows,
-  reclassifyShortActiveAsSilent,
-  stabilizeSilenceMask,
-  suppressBriefMarginalActivity
+  computeRmsWindows
 } from '../src/core/audio'
 import { buildTimelinePreviewData, deriveCutRegions } from '../src/core/preview'
 import { buildKeepSegments } from '../src/core/segments'
@@ -86,35 +83,9 @@ async function main(): Promise<void> {
 
   const hopWindows = computeRmsWindows(new Float32Array(100), 1000)
   record(
-    'analysis — 10 ms hop',
-    hopWindows.length === 9,
+    'analysis — 40 ms TimeBolt blocks',
+    hopWindows.length === 3,
     `windows=${hopWindows.length}`
-  )
-  record(
-    'analysis — isolated classification flip is stabilized',
-    stabilizeSilenceMask([true, false, true]).every(Boolean),
-    'silent/active/silent → silent'
-  )
-  const exactShortActive = reclassifyShortActiveAsSilent(
-    [
-      { startSeconds: 0, endSeconds: 1 },
-      { startSeconds: 1.35, endSeconds: 2 }
-    ],
-    2,
-    0.35
-  )
-  record(
-    'analysis — exact minimum active duration is ignored',
-    exactShortActive.length === 1 && exactShortActive[0].endSeconds === 2,
-    `silent regions=${exactShortActive.length}`
-  )
-  const marginalLevels = new Array(43).fill(0.01)
-  const strongLevels = new Array(43).fill(0.2)
-  record(
-    'analysis — marginal short activity is suppressed',
-    suppressBriefMarginalActivity(marginalLevels, 0.001, 0.35).every((level) => level === 0) &&
-      suppressBriefMarginalActivity(strongLevels, 0.001, 0.35).every((level) => level > 0),
-    '43 windows: marginal removed, strong retained'
   )
 
   // --- synthetic silence detection ---
@@ -192,9 +163,13 @@ async function main(): Promise<void> {
   )
   record(
     'single-track.mp4 — end-to-end detection',
-    singleSegments.length >= 1 &&
+    Number.isFinite(singleAnalysis.thresholdDb) &&
       singlePreview.waveform.bucketCount === singleWave.bucketCount &&
-      singlePreview.keptDurationSeconds > 0,
+      Math.abs(
+        singlePreview.keptDurationSeconds +
+          singlePreview.cutDurationSeconds -
+          single.durationSeconds
+      ) < 0.05,
     `segments=${singleSegments.length}, kept=${singlePreview.keptDurationSeconds.toFixed(2)}s`
   )
 

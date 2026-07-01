@@ -1,4 +1,4 @@
-import { analyzeAudio, prepareAnalysisSamples } from '@core/audio'
+import { analyzeRmsLevels, prepareAnalysisSamples } from '@core/audio'
 import {
   buildAnalysisWaveformEnvelope,
   defaultPreviewBucketCount
@@ -9,6 +9,7 @@ import type { DetectionParams } from '@core/presets'
 import { buildTimelinePreviewData } from '@core/preview'
 import { buildKeepSegments } from '@core/segments'
 import { getAnalysisPcm } from './pcm-cache'
+import { extractDetectionRmsWindows } from '../ffmpeg/pcm'
 
 /**
  * Silence detection pipeline.
@@ -29,8 +30,16 @@ export async function runSilenceDetection(
   audioStreamIndices: number[],
   params: DetectionParams
 ): Promise<SilenceDetectionResult> {
-  const pcm = await getAnalysisPcm(filePath, durationSeconds, audioStreamIndices)
-  const analysis = analyzeAudio(pcm, params)
+  const [pcm, detectionLevels] = await Promise.all([
+    getAnalysisPcm(filePath, durationSeconds, audioStreamIndices),
+    extractDetectionRmsWindows(filePath, audioStreamIndices)
+  ])
+  const analysis = analyzeRmsLevels(
+    detectionLevels.rmsValues,
+    detectionLevels.sampleRate,
+    durationSeconds,
+    params
+  )
   const keepSegments = buildKeepSegments(durationSeconds, analysis.silentRegions, params)
   const normalized = prepareAnalysisSamples(pcm.samples, pcm.sampleRate)
   const waveform = buildAnalysisWaveformEnvelope(

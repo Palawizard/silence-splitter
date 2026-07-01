@@ -1,5 +1,7 @@
 export const WAVEFORM_SAMPLE_RATE = 8000
 export const ANALYSIS_SAMPLE_RATE = 16000
+export const DETECTION_SAMPLE_RATE = 48000
+export const TIMEBOLT_DECODER_TRIM_SECONDS = 0.017
 
 export function buildAudioFilter(
   audioStreamIndices: number[],
@@ -11,23 +13,17 @@ export function buildAudioFilter(
 
   if (audioStreamIndices.length === 1) {
     const index = audioStreamIndices[0]
-    return `[0:${index}]aformat=channel_layouts=mono,aresample=${sampleRate}[a]`
+    return `[0:${index}]aformat=channel_layouts=mono,volume=-3.0102999566dB,atrim=start=${TIMEBOLT_DECODER_TRIM_SECONDS},asetpts=PTS-STARTPTS,aresample=${sampleRate}[a]`
   }
 
   const monoSteps = audioStreamIndices
-    .map((index, i) => `[0:${index}]aformat=channel_layouts=mono[s${i}]`)
+    .map(
+      (index, i) =>
+        `[0:${index}]aformat=channel_layouts=mono,volume=-3.0102999566dB[s${i}]`
+    )
     .join(';')
   const mixInputs = audioStreamIndices.map((_, i) => `[s${i}]`).join('')
   const count = audioStreamIndices.length
-  const maxExpression = audioStreamIndices
-    .slice(1)
-    .reduce(
-      (expression, _, index) => `max(${expression},abs(val(${index + 1})))`,
-      'abs(val(0))'
-    )
 
-  // Treat selected tracks as an activity union. Taking the strongest absolute
-  // sample avoids phase cancellation and does not dilute one active track when
-  // several silent OBS tracks are selected.
-  return `${monoSteps};${mixInputs}amerge=inputs=${count}[merged];[merged]aeval='${maxExpression}':c=mono,aresample=${sampleRate}[a]`
+  return `${monoSteps};${mixInputs}amix=inputs=${count}:duration=longest:dropout_transition=0,atrim=start=${TIMEBOLT_DECODER_TRIM_SECONDS},asetpts=PTS-STARTPTS,aresample=${sampleRate}[a]`
 }

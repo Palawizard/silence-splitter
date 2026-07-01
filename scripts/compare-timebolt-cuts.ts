@@ -7,11 +7,12 @@
  * - { keepSegments: [{ sourceStartSeconds, sourceEndSeconds }] }
  * - { segments: [...] }
  * - a top-level array using either field pair
+ * - TimeBolt timeline entries: [{ start, duration, operation: "keep" | "remove" }]
  */
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { analyzeAudio } from '../src/core/audio'
+import { analyzeRmsLevels } from '../src/core/audio'
 import { defaultAnalysisTrackIndices } from '../src/core/media/default-analysis-tracks'
 import type { TimeRegion } from '../src/core/models/timeline-preview'
 import { getPresetById } from '../src/core/presets'
@@ -43,18 +44,30 @@ function parseRegions(value: unknown): TimeRegion[] {
     throw new Error('Reference JSON must contain keepSegments or segments.')
   }
 
-  return entries.map((entry, index) => {
+  return entries
+    .filter((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return true
+      }
+      const operation = (entry as UnknownRecord).operation
+      return operation === undefined || operation === 'keep'
+    })
+    .map((entry, index) => {
     if (!entry || typeof entry !== 'object') {
       throw new Error(`Invalid reference segment at index ${index}.`)
     }
     const record = entry as UnknownRecord
     const startSeconds = readNumber(record, ['sourceStartSeconds', 'startSeconds', 'start'])
-    const endSeconds = readNumber(record, ['sourceEndSeconds', 'endSeconds', 'end'])
+    let endSeconds = readNumber(record, ['sourceEndSeconds', 'endSeconds', 'end'])
+    const durationSeconds = readNumber(record, ['duration', 'durationSeconds'])
+    if (endSeconds === null && startSeconds !== null && durationSeconds !== null) {
+      endSeconds = startSeconds + durationSeconds
+    }
     if (startSeconds === null || endSeconds === null || endSeconds <= startSeconds) {
       throw new Error(`Invalid reference boundaries at index ${index}.`)
     }
-    return { startSeconds, endSeconds }
-  })
+      return { startSeconds, endSeconds }
+    })
 }
 
 function boundaries(regions: TimeRegion[]): number[] {
@@ -122,9 +135,14 @@ async function main(): Promise<void> {
   const pcmModule = await import(pathToFileURL(resolve('src/main/ffmpeg/pcm.ts')).href)
   const media = await probe.probeMedia(videoPath)
   const tracks = defaultAnalysisTrackIndices(media.audioStreams)
-  const pcm = await pcmModule.extractAnalysisPcm(videoPath, media.durationSeconds, tracks)
+  const detection = await pcmModule.extractDetectionRmsWindows(videoPath, tracks)
   const params = getPresetById('gaming-energetic').params
-  const analysis = analyzeAudio(pcm, params)
+  const analysis = analyzeRmsLevels(
+    detection.rmsValues,
+    detection.sampleRate,
+    media.durationSeconds,
+    params
+  )
   const actual = buildKeepSegments(media.durationSeconds, analysis.silentRegions, params).map((segment) => ({
     startSeconds: segment.sourceStartSeconds,
     endSeconds: segment.sourceEndSeconds

@@ -8,14 +8,14 @@ function regionDuration(region: SilentRegion): number {
   return Math.max(0, region.endSeconds - region.startSeconds)
 }
 
-/** Keep only silent regions long enough to be cut (Timebolt: remove silences longer than X). */
+/** TimeBolt keeps silence at or below the grace period and cuts only longer gaps. */
 export function filterSilentRegions(
   regions: SilentRegion[],
   params: DetectionParams
 ): SilentRegion[] {
   return regions.filter((region) => {
     const duration = regionDuration(region)
-    return duration >= params.removeSilencesLongerThanSeconds
+    return duration > params.removeSilencesLongerThanSeconds
   })
 }
 
@@ -111,7 +111,12 @@ export function buildKeepSegments(
 
   keepRegions = keepRegions
     .map((region) => clampTimeRange(region.startSeconds, region.endSeconds, durationSeconds))
-    .filter((region) => region.endSeconds - region.startSeconds > 0)
+    // TimeBolt applies Ignore Detections after padding and overlap merging.
+    .filter(
+      (region) =>
+        region.endSeconds - region.startSeconds >=
+        params.ignoreDetectionsShorterThanSeconds
+    )
 
   if (keepRegions.length === 0) {
     return []

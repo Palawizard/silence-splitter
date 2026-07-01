@@ -15,9 +15,10 @@ export { computeAutoThreshold, computeAutoThresholdDb } from './threshold'
 export {
   detectSilentRegionsFromRms,
   detectSilentRegionsFromRmsDb,
-  mergeAdjacentRegions,
-  reclassifyShortActiveAsSilent,
-  stabilizeSilenceMask,
-  suppressBriefMarginalActivity
+  mergeAdjacentRegions
 } from './regions'
-export { analyzeAudio, type AudioAnalysisResult } from './detect'
+export {
+  analyzeAudio,
+  analyzeRmsLevels,
+  type AudioAnalysisResult
+} from './detect'
