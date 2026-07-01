@@ -1,7 +1,8 @@
 import type { DetectionParams } from '@core/presets'
 import { computeRmsWindows } from './rms'
 import { prepareAnalysisSamples } from './prepare-samples'
-import { computeAutoThreshold, computeAutoThresholdDb } from './threshold'
+import { dbFsToRms } from './db'
+import { computeAutoThresholdDb } from './threshold'
 import { detectSilentRegionsFromRms, reclassifyShortActiveAsSilent } from './regions'
 import type { PcmAudio, SilentRegion } from './types'
 
@@ -17,7 +18,7 @@ export function analyzeAudio(pcm: PcmAudio, params: DetectionParams): AudioAnaly
   const normalized = prepareAnalysisSamples(pcm.samples, pcm.sampleRate)
   const levelValues = computeRmsWindows(normalized, pcm.sampleRate)
   const thresholdDb = computeAutoThresholdDb(levelValues, params.thresholdBias)
-  const threshold = computeAutoThreshold(levelValues, params.thresholdBias)
+  const threshold = dbFsToRms(thresholdDb)
   let silentRegions = detectSilentRegionsFromRms(levelValues, pcm.sampleRate, threshold)
   silentRegions = reclassifyShortActiveAsSilent(
     silentRegions,

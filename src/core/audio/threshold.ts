@@ -3,18 +3,26 @@ import { dbFsToRms, rmsToDbFs } from './db'
 
 const BIAS_OFFSET_DB: Record<ThresholdBias, number> = {
   very_aggressive: 16,
-  aggressive: 15,
+  aggressive: 16.8,
   medium: 8,
   voice: 4
 }
+
+const DENSE_BED_FLOOR_DB = -70
+const DEEP_SILENCE_FLOOR_DB = -80
+const DEEP_SILENCE_QUARTILE_DB = -58
 
 function percentileDb(dbs: number[], p: number): number {
   return dbs[Math.floor(dbs.length * p)]
 }
 
 /**
- * Timebolt-style auto "Filter below sound level".
- * Single speech-band formula; quiet-floor cap when p5 sits high (dense game bed).
+ * Robust automatic sound threshold based on distribution percentiles.
+ *
+ * The three regimes cover recordings with a dense background bed, ordinary
+ * speech/noise separation, and OBS captures containing long digital silence.
+ * Percentiles are stable under short peaks and reference normalization makes
+ * the result independent of the source's absolute gain.
  */
 export function computeAutoThresholdDb(levelValues: number[], bias: ThresholdBias): number {
   if (levelValues.length === 0) {
@@ -30,13 +38,13 @@ export function computeAutoThresholdDb(levelValues: number[], bias: ThresholdBia
   const speechBand = Math.max(8, p75 - p25)
   let estimated = p10 + speechBand * 0.35 + BIAS_OFFSET_DB[bias]
 
-  if (p5 > -70) {
-    estimated = Math.min(estimated, p5 + 7.5)
-  } else if (p5 < -80 && estimated < -55) {
-    estimated = -55
+  if (p5 > DENSE_BED_FLOOR_DB) {
+    estimated = Math.min(estimated, p5 + 8.3)
+  } else if (p5 < DEEP_SILENCE_FLOOR_DB && p25 < DEEP_SILENCE_QUARTILE_DB) {
+    estimated = p25 + 2.5
   }
 
-  return Math.min(-30, Math.max(-62, estimated))
+  return Math.min(-30, Math.max(-70, estimated))
 }
 
 export function computeAutoThreshold(levelValues: number[], bias: ThresholdBias): number {

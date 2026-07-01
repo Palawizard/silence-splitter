@@ -2,7 +2,7 @@ import { computePeakWindows } from './levels'
 
 const DEFAULT_REFERENCE_PERCENTILE = 0.995
 
-/** Scale samples so the loudest sample is 1.0 (Timebolt-style waveform normalization). */
+/** Scale samples so the loudest sample is 1.0. Kept for calibration comparisons. */
 export function peakNormalize(samples: Float32Array): Float32Array {
   let peak = 0
   for (let i = 0; i < samples.length; i++) {
@@ -27,7 +27,7 @@ export function peakNormalize(samples: Float32Array): Float32Array {
 
 /**
  * Scale by a high-percentile peak (not absolute max).
- * Avoids one loud spike squashing long streams — closer to Timebolt waveform scaling.
+ * Avoids one loud spike changing the detector scale for an entire recording.
  */
 export function referenceNormalize(
   samples: Float32Array,

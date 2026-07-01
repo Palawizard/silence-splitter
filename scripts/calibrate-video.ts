@@ -107,7 +107,7 @@ async function main(): Promise<void> {
 
     let bestDb = thresholdDb
     let bestDelta = Math.abs(autoKept - targetKeptSeconds)
-    for (let db = -60; db <= -28; db += 0.5) {
+    for (let db = -70; db <= -28; db += 0.1) {
       const kept = keptSeconds(media.durationSeconds, levelValues, pcmData.sampleRate, params, db)
       const delta = Math.abs(kept - targetKeptSeconds)
       if (delta < bestDelta) {
