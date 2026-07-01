@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { buildTimelineExportModel, createTimelineRate } from '../src/core/export'
 import { filePathToUrl, generateResolveXml } from '../src/core/export/resolve'
 import type { MediaInfo } from '../src/core/models/media-info'
 import { ensureXmlExtension, writeResolveXml } from '../src/main/export/resolve-xml'
+import { probeMedia } from '../src/main/ffmpeg/probe'
 
 const media: MediaInfo = {
   filePath: 'C:\\Media Files\\source.mp4',
@@ -163,6 +164,23 @@ assert.equal(ensureXmlExtension('C:\\Exports\\timeline'), 'C:\\Exports\\timeline
 assert.equal(ensureXmlExtension('C:\\Exports\\timeline.XML'), 'C:\\Exports\\timeline.XML')
 
 async function testFileWriting(): Promise<void> {
+  const fixtureMedia = await probeMedia(resolve('test/fixtures/multi-track.mp4'))
+  assert.equal(fixtureMedia.audioStreams.length, 2)
+  const fixtureModel = buildTimelineExportModel(fixtureMedia, [
+    {
+      sourceStartSeconds: 0,
+      sourceEndSeconds: 1,
+      timelineStartSeconds: 0,
+      timelineEndSeconds: 1
+    }
+  ])
+  assert.deepEqual(
+    fixtureModel.source.audioTracks.map((track) => track.sourceStreamIndex),
+    fixtureMedia.audioStreams.map((stream) => stream.index)
+  )
+  const fixtureXml = generateResolveXml(fixtureModel)
+  assert.equal(fixtureXml.match(/<clipitem id="audio-track-\d+-clip-1">/g)?.length, 2)
+
   const temporaryDirectory = await mkdtemp(join(tmpdir(), 'silence-splitter-epic3-'))
   try {
     const outputPath = await writeResolveXml(join(temporaryDirectory, 'timeline'), media, [
