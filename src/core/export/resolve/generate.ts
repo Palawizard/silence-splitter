@@ -24,8 +24,7 @@ function provisionalPathUrl(filePath: string): string {
 
 function sourceFileXml(model: TimelineExportModel, indentation: string): string[] {
   const { source, rate } = model
-
-  return [
+  const lines = [
     `${indentation}<file id="source-file-1">`,
     `${indentation}  <name>${escapeXml(source.fileName)}</name>`,
     ...rateXml(rate, `${indentation}  `),
@@ -47,10 +46,50 @@ function sourceFileXml(model: TimelineExportModel, indentation: string): string[
     `${indentation}        <pixelaspectratio>square</pixelaspectratio>`,
     `${indentation}        <fielddominance>none</fielddominance>`,
     `${indentation}      </samplecharacteristics>`,
-    `${indentation}    </video>`,
-    `${indentation}  </media>`,
-    `${indentation}</file>`
+    `${indentation}    </video>`
   ]
+
+  source.audioTracks.forEach((track) => {
+    lines.push(
+      `${indentation}    <audio>`,
+      `${indentation}      <samplecharacteristics>`,
+      `${indentation}        <samplerate>${track.sampleRate}</samplerate>`,
+      `${indentation}        <depth>16</depth>`,
+      `${indentation}      </samplecharacteristics>`,
+      `${indentation}      <channelcount>${track.channels}</channelcount>`,
+      `${indentation}    </audio>`
+    )
+  })
+
+  lines.push(`${indentation}  </media>`, `${indentation}</file>`)
+  return lines
+}
+
+function linksXml(
+  model: TimelineExportModel,
+  clipIndex: number,
+  indentation: string
+): string[] {
+  const lines = [
+    `${indentation}<link>`,
+    `${indentation}  <mediatype>video</mediatype>`,
+    `${indentation}  <trackindex>1</trackindex>`,
+    `${indentation}  <clipindex>${clipIndex}</clipindex>`,
+    `${indentation}</link>`
+  ]
+
+  model.source.audioTracks.forEach((track) => {
+    lines.push(
+      `${indentation}<link>`,
+      `${indentation}  <mediatype>audio</mediatype>`,
+      `${indentation}  <trackindex>${track.timelineTrackIndex}</trackindex>`,
+      `${indentation}  <clipindex>${clipIndex}</clipindex>`,
+      `${indentation}  <groupindex>1</groupindex>`,
+      `${indentation}</link>`
+    )
+  })
+
+  return lines
 }
 
 function videoClipXml(
@@ -77,12 +116,88 @@ function videoClipXml(
   }
 
   lines.push(
+    ...linksXml(model, segment.index, `${indentation}  `),
     `${indentation}  <sourcetrack>`,
     `${indentation}    <mediatype>video</mediatype>`,
     `${indentation}    <trackindex>1</trackindex>`,
     `${indentation}  </sourcetrack>`,
     `${indentation}</clipitem>`
   )
+
+  return lines
+}
+
+function audioClipXml(
+  model: TimelineExportModel,
+  segmentIndex: number,
+  audioTrackIndex: number,
+  indentation: string
+): string[] {
+  const segment = model.segments[segmentIndex]
+  const audioTrack = model.source.audioTracks[audioTrackIndex]
+
+  return [
+    `${indentation}<clipitem id="audio-track-${audioTrack.timelineTrackIndex}-clip-${segment.index}">`,
+    `${indentation}  <name>${escapeXml(model.source.fileName)}</name>`,
+    `${indentation}  <duration>${model.source.durationFrames}</duration>`,
+    ...rateXml(model.rate, `${indentation}  `),
+    `${indentation}  <start>${segment.timelineInFrame}</start>`,
+    `${indentation}  <end>${segment.timelineOutFrame}</end>`,
+    `${indentation}  <in>${segment.sourceInFrame}</in>`,
+    `${indentation}  <out>${segment.sourceOutFrame}</out>`,
+    `${indentation}  <file id="source-file-1"/>`,
+    `${indentation}  <sourcetrack>`,
+    `${indentation}    <mediatype>audio</mediatype>`,
+    `${indentation}    <trackindex>${audioTrack.sourceTrackIndex}</trackindex>`,
+    `${indentation}  </sourcetrack>`,
+    `${indentation}</clipitem>`
+  ]
+}
+
+function audioTimelineXml(model: TimelineExportModel, indentation: string): string[] {
+  if (model.source.audioTracks.length === 0) {
+    return []
+  }
+
+  const primarySampleRate = model.source.audioTracks[0].sampleRate
+  const lines = [
+    `${indentation}<audio>`,
+    `${indentation}  <format>`,
+    `${indentation}    <samplecharacteristics>`,
+    `${indentation}      <depth>16</depth>`,
+    `${indentation}      <samplerate>${primarySampleRate}</samplerate>`,
+    `${indentation}    </samplecharacteristics>`,
+    `${indentation}  </format>`,
+    `${indentation}  <outputs>`
+  ]
+
+  let outputChannelIndex = 1
+  model.source.audioTracks.forEach((track) => {
+    lines.push(
+      `${indentation}    <group>`,
+      `${indentation}      <index>${track.timelineTrackIndex}</index>`,
+      `${indentation}      <numchannels>${track.channels}</numchannels>`
+    )
+    for (let channel = 0; channel < track.channels; channel += 1) {
+      lines.push(
+        `${indentation}      <channel>`,
+        `${indentation}        <index>${outputChannelIndex}</index>`,
+        `${indentation}      </channel>`
+      )
+      outputChannelIndex += 1
+    }
+    lines.push(`${indentation}    </group>`)
+  })
+
+  lines.push(`${indentation}  </outputs>`)
+  model.source.audioTracks.forEach((_track, audioTrackIndex) => {
+    lines.push(`${indentation}  <track>`)
+    model.segments.forEach((_segment, segmentIndex) => {
+      lines.push(...audioClipXml(model, segmentIndex, audioTrackIndex, `${indentation}    `))
+    })
+    lines.push(`${indentation}  </track>`)
+  })
+  lines.push(`${indentation}</audio>`)
 
   return lines
 }
@@ -124,6 +239,7 @@ export function generateResolveXml(model: TimelineExportModel): string {
   lines.push(
     '        </track>',
     '      </video>',
+    ...audioTimelineXml(model, '      '),
     '    </media>',
     '  </sequence>',
     '</xmeml>',

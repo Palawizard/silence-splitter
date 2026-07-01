@@ -110,6 +110,18 @@ assert.match(
   /<clipitem id="video-clip-2">[\s\S]*?<start>38<\/start>[\s\S]*?<end>88<\/end>[\s\S]*?<in>125<\/in>[\s\S]*?<out>175<\/out>/
 )
 assert.equal(xml.match(/<file id="source-file-1">/g)?.length, 1)
-assert.equal(xml.match(/<file id="source-file-1"\/>/g)?.length, 1)
+assert.equal(xml.match(/<file id="source-file-1"\/>/g)?.length, 5)
+assert.equal(xml.match(/<clipitem id="audio-track-\d+-clip-\d+">/g)?.length, 4)
+assert.equal(xml.match(/<mediatype>audio<\/mediatype>/g)?.length, 8)
+assert.match(
+  xml,
+  /<clipitem id="audio-track-1-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<in>25<\/in>[\s\S]*?<out>63<\/out>[\s\S]*?<mediatype>audio<\/mediatype>[\s\S]*?<trackindex>1<\/trackindex>/
+)
+assert.match(
+  xml,
+  /<clipitem id="audio-track-2-clip-2">[\s\S]*?<start>38<\/start>[\s\S]*?<end>88<\/end>[\s\S]*?<in>125<\/in>[\s\S]*?<out>175<\/out>[\s\S]*?<mediatype>audio<\/mediatype>[\s\S]*?<trackindex>2<\/trackindex>/
+)
+assert.equal(xml.match(/<channelcount>2<\/channelcount>/g)?.length, 1)
+assert.equal(xml.match(/<channelcount>1<\/channelcount>/g)?.length, 1)
 
 console.log('Epic 3 shared export model and Resolve XML: PASS')
