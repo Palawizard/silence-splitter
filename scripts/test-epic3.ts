@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { buildTimelineExportModel, createTimelineRate } from '../src/core/export'
-import { generateResolveXml } from '../src/core/export/resolve'
+import { filePathToUrl, generateResolveXml } from '../src/core/export/resolve'
 import type { MediaInfo } from '../src/core/models/media-info'
 
 const media: MediaInfo = {
@@ -123,5 +123,37 @@ assert.match(
 )
 assert.equal(xml.match(/<channelcount>2<\/channelcount>/g)?.length, 1)
 assert.equal(xml.match(/<channelcount>1<\/channelcount>/g)?.length, 1)
+
+assert.equal(
+  filePathToUrl('C:\\Media & Files\\café #1%.mp4'),
+  'file:///C:/Media%20%26%20Files/caf%C3%A9%20%231%25.mp4'
+)
+assert.equal(
+  filePathToUrl('\\\\media-server\\rushes\\clip test.mp4'),
+  'file://media-server/rushes/clip%20test.mp4'
+)
+assert.throws(() => filePathToUrl('relative/source.mp4'), /must be absolute/)
+
+const specialPathModel = buildTimelineExportModel(
+  {
+    ...media,
+    filePath: 'C:\\Media & Files\\café #1%.mp4'
+  },
+  [
+    {
+      sourceStartSeconds: 0,
+      sourceEndSeconds: 1,
+      timelineStartSeconds: 0,
+      timelineEndSeconds: 1
+    }
+  ],
+  'Montage <test> & "validation"'
+)
+const specialPathXml = generateResolveXml(specialPathModel)
+assert.match(
+  specialPathXml,
+  /<pathurl>file:\/\/\/C:\/Media%20%26%20Files\/caf%C3%A9%20%231%25\.mp4<\/pathurl>/
+)
+assert.match(specialPathXml, /<name>Montage &lt;test&gt; &amp; &quot;validation&quot;<\/name>/)
 
 console.log('Epic 3 shared export model and Resolve XML: PASS')

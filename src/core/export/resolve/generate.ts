@@ -1,4 +1,5 @@
 import type { TimelineExportModel, TimelineRate } from '../types'
+import { filePathToUrl } from './path-url'
 
 function escapeXml(value: string): string {
   return value
@@ -18,10 +19,6 @@ function rateXml(rate: TimelineRate, indentation: string): string[] {
   ]
 }
 
-function provisionalPathUrl(filePath: string): string {
-  return `file://localhost/${filePath.replaceAll('\\', '/')}`
-}
-
 function sourceFileXml(model: TimelineExportModel, indentation: string): string[] {
   const { source, rate } = model
   const lines = [
@@ -29,7 +26,7 @@ function sourceFileXml(model: TimelineExportModel, indentation: string): string[
     `${indentation}  <name>${escapeXml(source.fileName)}</name>`,
     ...rateXml(rate, `${indentation}  `),
     `${indentation}  <duration>${source.durationFrames}</duration>`,
-    `${indentation}  <pathurl>${escapeXml(provisionalPathUrl(source.filePath))}</pathurl>`,
+    `${indentation}  <pathurl>${escapeXml(filePathToUrl(source.filePath))}</pathurl>`,
     `${indentation}  <timecode>`,
     ...rateXml(rate, `${indentation}    `),
     `${indentation}    <string>00:00:00:00</string>`,
