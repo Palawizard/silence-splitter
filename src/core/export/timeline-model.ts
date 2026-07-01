@@ -102,8 +102,19 @@ export function buildTimelineExportModel(
       filePath: media.filePath,
       fileName: basename(media.filePath),
       durationFrames,
+      videoStreamIndex: media.video.index,
       width: media.video.width,
-      height: media.video.height
+      height: media.video.height,
+      audioTracks: media.audioStreams.map((stream, index) => ({
+        timelineTrackIndex: index + 1,
+        sourceStreamIndex: stream.index,
+        sourceTrackIndex: index + 1,
+        codec: stream.codec,
+        channels: stream.channels,
+        sampleRate: stream.sampleRate,
+        language: stream.language,
+        title: stream.title
+      }))
     },
     segments,
     durationFrames: segments.at(-1)?.timelineOutFrame ?? 0

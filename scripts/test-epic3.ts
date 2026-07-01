@@ -13,7 +13,23 @@ const media: MediaInfo = {
     frameRate: 25,
     isVariableFrameRate: false
   },
-  audioStreams: []
+  audioStreams: [
+    {
+      index: 2,
+      codec: 'aac',
+      channels: 2,
+      sampleRate: 48000,
+      language: 'fra',
+      title: 'Microphone'
+    },
+    {
+      index: 5,
+      codec: 'aac',
+      channels: 1,
+      sampleRate: 44100,
+      title: 'Jeu'
+    }
+  ]
 }
 
 const model = buildTimelineExportModel(media, [
@@ -54,6 +70,28 @@ assert.deepEqual(model.segments, [
 ])
 assert.equal(model.durationFrames, 88)
 assert.equal(model.source.fileName, 'source.mp4')
+assert.deepEqual(model.source.audioTracks, [
+  {
+    timelineTrackIndex: 1,
+    sourceStreamIndex: 2,
+    sourceTrackIndex: 1,
+    codec: 'aac',
+    channels: 2,
+    sampleRate: 48000,
+    language: 'fra',
+    title: 'Microphone'
+  },
+  {
+    timelineTrackIndex: 2,
+    sourceStreamIndex: 5,
+    sourceTrackIndex: 2,
+    codec: 'aac',
+    channels: 1,
+    sampleRate: 44100,
+    language: undefined,
+    title: 'Jeu'
+  }
+])
 assert.throws(() => createTimelineRate(27.5), /Unsupported source frame rate/)
 
 console.log('Epic 3 shared export model: PASS')
