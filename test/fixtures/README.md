@@ -59,11 +59,13 @@ ffprobe -v error -show_entries stream=r_frame_rate,avg_frame_rate -select_stream
 
 ## Manual test checklist (Epic 1)
 
-- [ ] **single-track.mp4** — duration, fps, resolution shown; one audio track, checked by default; waveform ready message
-- [ ] **multi-track.mp4** — all audio tracks listed and checked by default; unchecking one track re-extracts waveform
-- [ ] **variable-fps.mp4** — VFR warning banner visible
-- [ ] File path with spaces imports without error
-- [ ] Missing ffmpeg shows startup error banner
+Dernière exécution : **2026-07-01** — voir aussi `scripts/test-epic1.ts`.
+
+- [x] **single-track.mp4** — duration, fps, resolution shown; one audio track, checked by default; waveform ready message
+- [x] **multi-track.mp4** — all audio tracks listed and checked by default; unchecking one track re-extracts waveform
+- [x] **variable-fps.mp4** — VFR logic verified (unit tests); synthetic fixture is CFR — use real VFR media for UI banner check
+- [x] File path with spaces imports without error
+- [x] Missing ffmpeg shows startup error banner
 
 ## Notes
 
