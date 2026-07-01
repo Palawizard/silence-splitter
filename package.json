@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test:epic1": "tsx scripts/test-epic1.ts",
     "test:epic2": "tsx scripts/test-epic2.ts",
+    "test:epic3": "tsx scripts/test-epic3.ts",
     "test:timebolt": "tsx scripts/test-timebolt-regression.ts",
     "compare:timebolt": "tsx scripts/compare-timebolt-cuts.ts"
   },
