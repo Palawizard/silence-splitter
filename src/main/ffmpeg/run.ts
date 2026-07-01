@@ -38,3 +38,29 @@ export function runCommandBuffer(binary: string, args: string[]): Promise<Buffer
     })
   })
 }
+
+export function runCommandChunks(
+  binary: string,
+  args: string[],
+  onChunk: (chunk: Buffer) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    let stderr = ''
+
+    child.stdout.on('data', (chunk: Buffer) => {
+      onChunk(chunk)
+    })
+    child.stderr.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString()
+    })
+    child.on('error', reject)
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve()
+      } else {
+        reject(new Error(`ffmpeg exited with code ${code}: ${stderr.trim()}`))
+      }
+    })
+  })
+}

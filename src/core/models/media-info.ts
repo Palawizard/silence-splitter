@@ -3,6 +3,8 @@ export type AudioStreamInfo = {
   codec: string
   channels: number
   sampleRate: number
+  durationSeconds?: number
+  bitRate?: number
   language?: string
   title?: string
 }

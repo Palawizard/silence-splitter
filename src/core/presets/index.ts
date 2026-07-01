@@ -18,15 +18,16 @@ export type Preset = {
   params: DetectionParams
 }
 
+/** Timebolt gaming setup (user reference values). */
 export const PRESETS: Preset[] = [
   {
     id: 'gaming-energetic',
     label: 'Gaming énergique',
     params: {
-      removeSilencesLongerThanSeconds: 0.45,
-      ignoreDetectionsShorterThanSeconds: 0.3,
+      removeSilencesLongerThanSeconds: 0.5,
+      ignoreDetectionsShorterThanSeconds: 0.35,
       leftPaddingSeconds: 0.03,
-      rightPaddingSeconds: 0.05,
+      rightPaddingSeconds: 0.03,
       thresholdBias: 'aggressive'
     }
   },
@@ -34,10 +35,10 @@ export const PRESETS: Preset[] = [
     id: 'gaming-chill',
     label: "Gaming chill / let's play",
     params: {
-      removeSilencesLongerThanSeconds: 0.8,
-      ignoreDetectionsShorterThanSeconds: 0.35,
-      leftPaddingSeconds: 0.05,
-      rightPaddingSeconds: 0.1,
+      removeSilencesLongerThanSeconds: 0.5,
+      ignoreDetectionsShorterThanSeconds: 0.75,
+      leftPaddingSeconds: 0.06,
+      rightPaddingSeconds: 0.14,
       thresholdBias: 'medium'
     }
   },
@@ -45,10 +46,10 @@ export const PRESETS: Preset[] = [
     id: 'podcast-facecam',
     label: 'Podcast / facecam',
     params: {
-      removeSilencesLongerThanSeconds: 0.6,
-      ignoreDetectionsShorterThanSeconds: 0.25,
-      leftPaddingSeconds: 0.06,
-      rightPaddingSeconds: 0.12,
+      removeSilencesLongerThanSeconds: 0.5,
+      ignoreDetectionsShorterThanSeconds: 0.75,
+      leftPaddingSeconds: 0.08,
+      rightPaddingSeconds: 0.15,
       thresholdBias: 'voice'
     }
   },
@@ -56,10 +57,10 @@ export const PRESETS: Preset[] = [
     id: 'tiktok-ultra-cut',
     label: 'TikTok ultra cut',
     params: {
-      removeSilencesLongerThanSeconds: 0.25,
-      ignoreDetectionsShorterThanSeconds: 0.2,
+      removeSilencesLongerThanSeconds: 0.5,
+      ignoreDetectionsShorterThanSeconds: 0.75,
       leftPaddingSeconds: 0.02,
-      rightPaddingSeconds: 0.04,
+      rightPaddingSeconds: 0.1,
       thresholdBias: 'very_aggressive'
     }
   }
