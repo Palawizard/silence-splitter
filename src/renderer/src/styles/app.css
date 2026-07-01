@@ -1,0 +1,147 @@
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.app h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.app .subtitle {
+  margin: 0 0 2rem;
+  color: #52525b;
+}
+
+.banner {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.card {
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+}
+
+.card h2 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  background: #fff;
+  color: #18181b;
+}
+
+.btn:hover {
+  background: #f4f4f5;
+}
+
+.btn-primary {
+  background: #18181b;
+  color: #fff;
+  border-color: #18181b;
+}
+
+.btn-primary:hover {
+  background: #27272a;
+}
+
+.file-name {
+  margin-top: 0.75rem;
+  color: #52525b;
+  word-break: break-all;
+}
+
+.muted {
+  margin-top: 1.5rem;
+  color: #71717a;
+  font-size: 0.875rem;
+}
+
+.status {
+  margin-top: 0.75rem;
+  color: #52525b;
+  font-size: 0.875rem;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.meta-grid dt {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #71717a;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.meta-grid dd {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.banner-warning {
+  margin-top: 1rem;
+  margin-bottom: 0;
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.hint {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: #52525b;
+}
+
+.track-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.track-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  cursor: pointer;
+  font-size: 0.9375rem;
+}
+
+.track-item input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #18181b;
+}
+
+.ready-hint {
+  margin-top: 0;
+}
