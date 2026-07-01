@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { buildTimelineExportModel, createTimelineRate } from '../src/core/export'
+import { generateResolveXml } from '../src/core/export/resolve'
 import type { MediaInfo } from '../src/core/models/media-info'
 
 const media: MediaInfo = {
@@ -94,4 +95,21 @@ assert.deepEqual(model.source.audioTracks, [
 ])
 assert.throws(() => createTimelineRate(27.5), /Unsupported source frame rate/)
 
-console.log('Epic 3 shared export model: PASS')
+const xml = generateResolveXml(model)
+assert.match(xml, /^<\?xml version="1\.0" encoding="UTF-8"\?>/)
+assert.match(xml, /<xmeml version="5">/)
+assert.match(xml, /<sequence id="sequence-1">/)
+assert.match(xml, /<duration>88<\/duration>/)
+assert.equal(xml.match(/<clipitem id="video-clip-\d+">/g)?.length, 2)
+assert.match(
+  xml,
+  /<clipitem id="video-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<in>25<\/in>[\s\S]*?<out>63<\/out>/
+)
+assert.match(
+  xml,
+  /<clipitem id="video-clip-2">[\s\S]*?<start>38<\/start>[\s\S]*?<end>88<\/end>[\s\S]*?<in>125<\/in>[\s\S]*?<out>175<\/out>/
+)
+assert.equal(xml.match(/<file id="source-file-1">/g)?.length, 1)
+assert.equal(xml.match(/<file id="source-file-1"\/>/g)?.length, 1)
+
+console.log('Epic 3 shared export model and Resolve XML: PASS')
