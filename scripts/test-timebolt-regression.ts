@@ -1,4 +1,4 @@
-/** Validate the gaming preset against the three local TimeBolt reference captures. */
+/** Validate the gaming preset against trusted local TimeBolt reference captures. */
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -14,7 +14,18 @@ const REFERENCES = [
     path: 'F:\\Fast Documents\\funky best of.mp4',
     targetKeptSeconds: 77 * 60 + 35,
     toleranceSeconds: 1,
-    referenceJson: 'F:\\Fast Documents\\funky best of.mp4.json'
+    referenceJson: 'F:\\Fast Documents\\funky best of.mp4.json',
+    boundaryToleranceSeconds: 1e-6,
+    totalBoundaryErrorToleranceSeconds: 1e-6
+  },
+  {
+    name: 'Minecraft multitrack',
+    path: 'F:\\Fast Documents\\video minecraft\\2026-05-20 00-33-28.mp4',
+    targetKeptSeconds: 50 * 60 + 25,
+    toleranceSeconds: 1,
+    referenceJson: 'F:\\Fast Documents\\video minecraft\\2026-05-20 00-33-28.mp4.json',
+    boundaryToleranceSeconds: 0.040_001,
+    totalBoundaryErrorToleranceSeconds: 0.1
   }
 ]
 
@@ -57,6 +68,7 @@ async function main(): Promise<void> {
     const deltaSeconds = Math.abs(keptSeconds - reference.targetKeptSeconds)
     const durationPass = deltaSeconds <= reference.toleranceSeconds
     let boundariesPass = true
+    let totalBoundaryErrorSeconds = 0
     if (reference.referenceJson) {
       const timeline = JSON.parse(await readFile(reference.referenceJson, 'utf8')) as Array<{
         start: number
@@ -64,15 +76,20 @@ async function main(): Promise<void> {
         operation: string
       }>
       const expected = timeline.filter((entry) => entry.operation === 'keep')
-      boundariesPass =
-        expected.length === segments.length &&
-        expected.every(
-          (entry, index) =>
-            Math.abs(entry.start - segments[index].sourceStartSeconds) < 1e-6 &&
-            Math.abs(
-              entry.start + entry.duration - segments[index].sourceEndSeconds
-            ) < 1e-6
-        )
+      const boundaryErrors = expected.flatMap((entry, index) => {
+        const segment = segments[index]
+        if (!segment) {
+          return [Infinity]
+        }
+        return [
+          Math.abs(entry.start - segment.sourceStartSeconds),
+          Math.abs(entry.start + entry.duration - segment.sourceEndSeconds)
+        ]
+      })
+      totalBoundaryErrorSeconds = boundaryErrors.reduce((sum, error) => sum + error, 0)
+      boundariesPass = expected.length === segments.length &&
+        boundaryErrors.every((error) => error <= reference.boundaryToleranceSeconds) &&
+        totalBoundaryErrorSeconds <= reference.totalBoundaryErrorToleranceSeconds
     }
     const pass = durationPass && boundariesPass
     failed ||= !pass
@@ -81,6 +98,7 @@ async function main(): Promise<void> {
       `${pass ? 'PASS' : 'FAIL'} ${reference.name}: kept=${formatDuration(keptSeconds)}, ` +
         `target=${formatDuration(reference.targetKeptSeconds)}, delta=${deltaSeconds.toFixed(2)}s, ` +
         `segments=${segments.length}, threshold=${analysis.thresholdDb.toFixed(2)} dB, ` +
+        `boundaryError=${totalBoundaryErrorSeconds.toFixed(3)}s, ` +
         `UI=${analysis.thresholdDisplayDb.toFixed(2)} dB`
     )
     if (!boundariesPass) {
