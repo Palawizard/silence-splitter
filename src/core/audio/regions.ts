@@ -87,6 +87,62 @@ export function stabilizeSilenceMask(mask: boolean[]): boolean[] {
   return stabilized
 }
 
+const BRIEF_ACTIVITY_EXTENSION_SECONDS = 0.15
+const BRIEF_ACTIVITY_MIN_MEDIAN_MARGIN_DB = 28
+
+/**
+ * Reject low-confidence clicks just above the minimum active duration.
+ * Strong short words and game sounds remain active; marginal waveform bumps do not
+ * create isolated keep segments that TimeBolt classifies as silence.
+ */
+export function suppressBriefMarginalActivity(
+  levelValues: number[],
+  threshold: number,
+  minActiveSeconds: number,
+  hopMs: number = DETECTION_HOP_MS
+): number[] {
+  if (levelValues.length === 0 || minActiveSeconds <= 0) {
+    return levelValues
+  }
+
+  const silentMask = stabilizeSilenceMask(
+    levelValues.map((value) => windowIsSilent(value, threshold))
+  )
+  const result = [...levelValues]
+  const thresholdDb = rmsToDbFs(threshold)
+  let activeStart: number | null = null
+
+  for (let i = 0; i <= silentMask.length; i++) {
+    const active = i < silentMask.length && !silentMask[i]
+    if (active && activeStart === null) {
+      activeStart = i
+      continue
+    }
+    if (active || activeStart === null) {
+      continue
+    }
+
+    const activeEnd = i
+    const durationSeconds = ((activeEnd - activeStart) * hopMs) / 1000
+    if (
+      durationSeconds > minActiveSeconds &&
+      durationSeconds <= minActiveSeconds + BRIEF_ACTIVITY_EXTENSION_SECONDS
+    ) {
+      const sortedDb = levelValues
+        .slice(activeStart, activeEnd)
+        .map(rmsToDbFs)
+        .sort((a, b) => a - b)
+      const medianDb = sortedDb[Math.floor(sortedDb.length / 2)]
+      if (medianDb < thresholdDb + BRIEF_ACTIVITY_MIN_MEDIAN_MARGIN_DB) {
+        result.fill(0, activeStart, activeEnd)
+      }
+    }
+    activeStart = null
+  }
+
+  return result
+}
+
 export function mergeAdjacentRegions(
   regions: SilentRegion[],
   gapToleranceSeconds: number

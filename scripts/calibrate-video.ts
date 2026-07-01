@@ -13,6 +13,7 @@ import {
   toTimeboltDisplayDb
 } from '../src/core/audio'
 import { detectSilentRegionsFromRms, reclassifyShortActiveAsSilent } from '../src/core/audio/regions'
+import { suppressBriefMarginalActivity } from '../src/core/audio/regions'
 import { buildKeepSegments } from '../src/core/segments'
 import { getPresetById, type DetectionParams } from '../src/core/presets'
 import { defaultAnalysisTrackIndices } from '../src/core/media/default-analysis-tracks'
@@ -42,7 +43,12 @@ function keptSeconds(
   thresholdDb: number
 ): number {
   const threshold = dbFsToRms(thresholdDb)
-  let silent = detectSilentRegionsFromRms(levelValues, sampleRate, threshold)
+  const classifiedLevels = suppressBriefMarginalActivity(
+    levelValues,
+    threshold,
+    params.ignoreDetectionsShorterThanSeconds
+  )
+  let silent = detectSilentRegionsFromRms(classifiedLevels, sampleRate, threshold)
   silent = reclassifyShortActiveAsSilent(
     silent,
     durationSeconds,

@@ -3,7 +3,7 @@ import { dbFsToRms, rmsToDbFs } from './db'
 
 const BIAS_OFFSET_DB: Record<ThresholdBias, number> = {
   very_aggressive: 16,
-  aggressive: 16.8,
+  aggressive: 13.5,
   medium: 8,
   voice: 4
 }
@@ -39,9 +39,9 @@ export function computeAutoThresholdDb(levelValues: number[], bias: ThresholdBia
   let estimated = p10 + speechBand * 0.35 + BIAS_OFFSET_DB[bias]
 
   if (p5 > DENSE_BED_FLOOR_DB) {
-    estimated = Math.min(estimated, p5 + 8.3)
+    estimated = Math.min(estimated, p5 + 7.2)
   } else if (p5 < DEEP_SILENCE_FLOOR_DB && p25 < DEEP_SILENCE_QUARTILE_DB) {
-    estimated = p25 + 2.5
+    estimated = p25 + 0.3
   }
 
   return Math.min(-30, Math.max(-70, estimated))

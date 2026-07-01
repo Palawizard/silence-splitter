@@ -5,7 +5,11 @@
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { peakNormalize, computeRmsWindows, dbFsToRms } from '../src/core/audio'
-import { detectSilentRegionsFromRms, reclassifyShortActiveAsSilent } from '../src/core/audio/regions'
+import {
+  detectSilentRegionsFromRms,
+  reclassifyShortActiveAsSilent,
+  suppressBriefMarginalActivity
+} from '../src/core/audio/regions'
 import { buildKeepSegments } from '../src/core/segments'
 import { getPresetById } from '../src/core/presets'
 import type { ThresholdBias } from '../src/core/presets'
@@ -61,7 +65,12 @@ function keptSeconds(
 ): number {
   const params = getPresetById('gaming-energetic').params
   const threshold = dbFsToRms(thresholdDb)
-  let silent = detectSilentRegionsFromRms(levels, sampleRate, threshold)
+  const classifiedLevels = suppressBriefMarginalActivity(
+    levels,
+    threshold,
+    params.ignoreDetectionsShorterThanSeconds
+  )
+  let silent = detectSilentRegionsFromRms(classifiedLevels, sampleRate, threshold)
   silent = reclassifyShortActiveAsSilent(
     silent,
     durationSeconds,

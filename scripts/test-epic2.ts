@@ -7,7 +7,8 @@ import {
   analyzeAudio,
   computeRmsWindows,
   reclassifyShortActiveAsSilent,
-  stabilizeSilenceMask
+  stabilizeSilenceMask,
+  suppressBriefMarginalActivity
 } from '../src/core/audio'
 import { buildTimelinePreviewData, deriveCutRegions } from '../src/core/preview'
 import { buildKeepSegments } from '../src/core/segments'
@@ -106,6 +107,14 @@ async function main(): Promise<void> {
     'analysis — exact minimum active duration is ignored',
     exactShortActive.length === 1 && exactShortActive[0].endSeconds === 2,
     `silent regions=${exactShortActive.length}`
+  )
+  const marginalLevels = new Array(43).fill(0.01)
+  const strongLevels = new Array(43).fill(0.2)
+  record(
+    'analysis — marginal short activity is suppressed',
+    suppressBriefMarginalActivity(marginalLevels, 0.001, 0.35).every((level) => level === 0) &&
+      suppressBriefMarginalActivity(strongLevels, 0.001, 0.35).every((level) => level > 0),
+    '43 windows: marginal removed, strong retained'
   )
 
   // --- synthetic silence detection ---

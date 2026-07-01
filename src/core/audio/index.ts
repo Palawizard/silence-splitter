@@ -17,6 +17,7 @@ export {
   detectSilentRegionsFromRmsDb,
   mergeAdjacentRegions,
   reclassifyShortActiveAsSilent,
-  stabilizeSilenceMask
+  stabilizeSilenceMask,
+  suppressBriefMarginalActivity
 } from './regions'
 export { analyzeAudio, type AudioAnalysisResult } from './detect'
