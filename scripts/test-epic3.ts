@@ -58,6 +58,16 @@ assert.deepEqual(createTimelineRate(30000 / 1001), {
   timebase: 30,
   ntsc: true
 })
+assert.deepEqual(createTimelineRate(59.98131975138647), {
+  framesPerSecond: 60,
+  timebase: 60,
+  ntsc: false
+})
+assert.deepEqual(createTimelineRate(120), {
+  framesPerSecond: 120,
+  timebase: 120,
+  ntsc: false
+})
 assert.deepEqual(model.segments, [
   {
     index: 1,
@@ -99,6 +109,30 @@ assert.deepEqual(model.source.audioTracks, [
   }
 ])
 assert.throws(() => createTimelineRate(27.5), /Unsupported source frame rate/)
+
+const measuredRateModel = buildTimelineExportModel(
+  {
+    ...media,
+    video: {
+      ...media.video!,
+      frameRate: 59.98131975138647,
+      nominalFrameRate: 60
+    }
+  },
+  [
+    {
+      sourceStartSeconds: 0,
+      sourceEndSeconds: 1,
+      timelineStartSeconds: 0,
+      timelineEndSeconds: 1
+    }
+  ]
+)
+assert.deepEqual(measuredRateModel.rate, {
+  framesPerSecond: 60,
+  timebase: 60,
+  ntsc: false
+})
 
 const xml = generateResolveXml(model)
 assert.match(xml, /^<\?xml version="1\.0" encoding="UTF-8"\?>/)

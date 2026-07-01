@@ -15,6 +15,7 @@ export type VideoStreamInfo = {
   width: number
   height: number
   frameRate: number
+  nominalFrameRate?: number
   isVariableFrameRate: boolean
 }
 

@@ -57,7 +57,8 @@ async function main(): Promise<void> {
       single.audioStreams.length === 1 &&
       single.video !== undefined &&
       single.video.width === 320 &&
-      single.video.height === 240,
+      single.video.height === 240 &&
+      single.video.nominalFrameRate === 25,
     `duration=${single.durationSeconds.toFixed(2)}s, audio=${single.audioStreams.length}, ` +
       `res=${single.video?.width}x${single.video?.height}, fps=${single.video?.frameRate.toFixed(2)}`
   )

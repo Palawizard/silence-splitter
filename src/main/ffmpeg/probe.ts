@@ -63,6 +63,7 @@ export function isVariableFrameRate(rFrameRate: string | undefined, avgFrameRate
 
 function mapVideoStream(stream: FfprobeStream): VideoStreamInfo {
   const frameRate = parseFrameRate(stream.avg_frame_rate) || parseFrameRate(stream.r_frame_rate)
+  const nominalFrameRate = parseFrameRate(stream.r_frame_rate) || frameRate
 
   return {
     index: stream.index,
@@ -70,6 +71,7 @@ function mapVideoStream(stream: FfprobeStream): VideoStreamInfo {
     width: stream.width ?? 0,
     height: stream.height ?? 0,
     frameRate,
+    nominalFrameRate,
     isVariableFrameRate: isVariableFrameRate(stream.r_frame_rate, stream.avg_frame_rate)
   }
 }
