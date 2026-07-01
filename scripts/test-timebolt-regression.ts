@@ -26,6 +26,12 @@ const REFERENCES = [
     targetKeptSeconds: 52 * 60 + 14,
     toleranceSeconds: 30,
     forbiddenKeepWindow: { startSeconds: 81, endSeconds: 84.5 }
+  },
+  {
+    name: 'Funky best of',
+    path: 'F:\\Fast Documents\\funky best of.mp4',
+    targetKeptSeconds: 77 * 60 + 35,
+    toleranceSeconds: 60
   }
 ]
 
@@ -75,7 +81,8 @@ async function main(): Promise<void> {
     console.log(
       `${pass ? 'PASS' : 'FAIL'} ${reference.name}: kept=${formatDuration(keptSeconds)}, ` +
         `target=${formatDuration(reference.targetKeptSeconds)}, delta=${deltaSeconds.toFixed(2)}s, ` +
-        `segments=${segments.length}, threshold=${analysis.thresholdDb.toFixed(2)} dB`
+        `segments=${segments.length}, threshold=${analysis.thresholdDb.toFixed(2)} dB, ` +
+        `UI=${analysis.thresholdDisplayDb.toFixed(2)} dB`
     )
     if (!windowPass) {
       console.log('     unexpected kept activity in Minecraft 1:21–1:24.5 reference window')

@@ -20,6 +20,7 @@ export type SilenceDetectionResult = {
   preview: TimelinePreviewData
   threshold: number
   thresholdDb: number
+  thresholdDisplayDb: number
 }
 
 export async function runSilenceDetection(
@@ -43,6 +44,7 @@ export async function runSilenceDetection(
     keepSegments,
     preview,
     threshold: analysis.threshold,
-    thresholdDb: analysis.thresholdDb
+    thresholdDb: analysis.thresholdDb,
+    thresholdDisplayDb: analysis.thresholdDisplayDb
   }
 }

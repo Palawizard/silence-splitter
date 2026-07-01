@@ -8,7 +8,6 @@ import {
   getPresetById,
   type DetectionParams
 } from '@core/presets'
-import { toTimeboltDisplayDb } from '@core/audio/db'
 import { defaultAnalysisTrackIndices } from '@core/media/default-analysis-tracks'
 import TimelinePreview from './components/TimelinePreview'
 import {
@@ -71,7 +70,7 @@ export default function App() {
         })
         setKeepSegments(result.keepSegments)
         setPreview(result.preview)
-        setFilterBelowDb(toTimeboltDisplayDb(result.thresholdDb))
+        setFilterBelowDb(result.thresholdDisplayDb)
         setLoadState('ready')
       } catch (err) {
         setKeepSegments([])

@@ -11,6 +11,8 @@ const BIAS_OFFSET_DB: Record<ThresholdBias, number> = {
 const DENSE_BED_FLOOR_DB = -70
 const DEEP_SILENCE_FLOOR_DB = -80
 const DEEP_SILENCE_QUARTILE_DB = -58
+const QUIET_SPREAD_MIN_OFFSET_DB = 5
+const QUIET_SPREAD_MAX_OFFSET_DB = 10
 
 function percentileDb(dbs: number[], p: number): number {
   return dbs[Math.floor(dbs.length * p)]
@@ -42,6 +44,16 @@ export function computeAutoThresholdDb(levelValues: number[], bias: ThresholdBia
     estimated = Math.min(estimated, p5 + 7.2)
   } else if (p5 < DEEP_SILENCE_FLOOR_DB && p25 < DEEP_SILENCE_QUARTILE_DB) {
     estimated = p25 + 0.3
+  } else if (p5 < DEEP_SILENCE_FLOOR_DB) {
+    // A long digital-silence tail can drag p10 down even when the useful audio
+    // has an ordinary noise floor. Anchor to p25 and use the quiet-band spread
+    // so intros containing only faint music do not determine the whole file.
+    const quietSpread = p25 - p10
+    const quietOffset = Math.min(
+      QUIET_SPREAD_MAX_OFFSET_DB,
+      Math.max(QUIET_SPREAD_MIN_OFFSET_DB, quietSpread * 0.224 + 1.5)
+    )
+    estimated = p25 + quietOffset
   }
 
   return Math.min(-30, Math.max(-70, estimated))

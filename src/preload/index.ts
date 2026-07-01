@@ -34,6 +34,7 @@ export type SilenceDetectionResponse = {
   preview: TimelinePreviewData
   threshold: number
   thresholdDb: number
+  thresholdDisplayDb: number
 }
 
 const api = {

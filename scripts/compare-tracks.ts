@@ -4,7 +4,7 @@
  */
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { analyzeAudio, toTimeboltDisplayDb } from '../src/core/audio'
+import { analyzeAudio } from '../src/core/audio'
 import { defaultAnalysisTrackIndices } from '../src/core/media/default-analysis-tracks'
 import { detectSilentRegionsFromRms, reclassifyShortActiveAsSilent } from '../src/core/audio/regions'
 import { buildKeepSegments } from '../src/core/segments'
@@ -63,7 +63,7 @@ async function main(): Promise<void> {
 
     console.log(`--- ${scenario.label} ---`)
     console.log(`  filter: ${filter}`)
-    console.log(`  raw peak: ${peak.toFixed(6)}, auto: ${analysis.thresholdDb.toFixed(1)} dB (UI ${toTimeboltDisplayDb(analysis.thresholdDb).toFixed(0)})`)
+    console.log(`  raw peak: ${peak.toFixed(6)}, auto: ${analysis.thresholdDb.toFixed(1)} dB (UI ${analysis.thresholdDisplayDb.toFixed(0)})`)
     console.log(`  kept: ${(kept / 60).toFixed(1)} min (Δ ${((kept - TARGET_KEPT) / 60).toFixed(1)} min)`)
     console.log('')
   }
