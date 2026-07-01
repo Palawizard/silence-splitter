@@ -35,6 +35,16 @@ const REFERENCES = [
     referenceJson: 'F:\\Fast Documents\\Chameleon\\Chameleon 2026.06.30 - 21.19.51.04.mp4.json',
     boundaryToleranceSeconds: 0.040_001,
     totalBoundaryErrorToleranceSeconds: 0.1
+  },
+  {
+    name: 'Funky long stream',
+    path: 'F:\\Fast Documents\\funky download\\[5-29-26] Funky_fps - ⚡retour du serveur RP !! ／ !help⚡.mp4',
+    targetKeptSeconds: 96 * 60 + 39,
+    toleranceSeconds: 1,
+    referenceJson: 'F:\\Fast Documents\\funky download\\[5-29-26] Funky_fps - ⚡retour du serveur RP !! ／ !help⚡.mp4.json',
+    // TimeBolt extends the final keep to its rounded timeline duration.
+    boundaryToleranceSeconds: 0.055,
+    totalBoundaryErrorToleranceSeconds: 0.125
   }
 ]
 
