@@ -10,33 +10,10 @@ import { buildKeepSegments } from '../src/core/segments'
 
 const REFERENCES = [
   {
-    name: 'Chameleon',
-    path: 'F:\\Fast Documents\\Chameleon\\Chameleon 2026.06.30 - 21.19.51.04.mp4',
-    targetKeptSeconds: 37 * 60 + 17,
-    toleranceSeconds: 60,
-    strict: false
-  },
-  {
-    name: 'Funky',
-    path: 'F:\\Fast Documents\\funky download\\[5-29-26] Funky_fps - ⚡retour du serveur RP !! ／ !help⚡.mp4',
-    targetKeptSeconds: 96 * 60,
-    toleranceSeconds: 60,
-    strict: false
-  },
-  {
-    name: 'Minecraft',
-    path: 'F:\\Fast Documents\\video minecraft\\2026-05-20 00-33-28.mp4',
-    targetKeptSeconds: 52 * 60 + 14,
-    toleranceSeconds: 30,
-    strict: false,
-    forbiddenKeepWindow: { startSeconds: 81, endSeconds: 84.5 }
-  },
-  {
     name: 'Funky best of',
     path: 'F:\\Fast Documents\\funky best of.mp4',
     targetKeptSeconds: 77 * 60 + 35,
     toleranceSeconds: 1,
-    strict: true,
     referenceJson: 'F:\\Fast Documents\\funky best of.mp4.json'
   }
 ]
@@ -75,13 +52,6 @@ async function main(): Promise<void> {
     )
     const deltaSeconds = Math.abs(keptSeconds - reference.targetKeptSeconds)
     const durationPass = deltaSeconds <= reference.toleranceSeconds
-    const windowPass = reference.forbiddenKeepWindow
-      ? !segments.some(
-          (segment) =>
-            segment.sourceStartSeconds < reference.forbiddenKeepWindow!.endSeconds &&
-            segment.sourceEndSeconds > reference.forbiddenKeepWindow!.startSeconds
-        )
-      : true
     let boundariesPass = true
     if (reference.referenceJson) {
       const timeline = JSON.parse(await readFile(reference.referenceJson, 'utf8')) as Array<{
@@ -100,18 +70,15 @@ async function main(): Promise<void> {
             ) < 1e-6
         )
     }
-    const pass = durationPass && windowPass && boundariesPass
-    failed ||= reference.strict && !pass
+    const pass = durationPass && boundariesPass
+    failed ||= !pass
 
     console.log(
-      `${reference.strict ? (pass ? 'PASS' : 'FAIL') : 'INFO'} ${reference.name}: kept=${formatDuration(keptSeconds)}, ` +
+      `${pass ? 'PASS' : 'FAIL'} ${reference.name}: kept=${formatDuration(keptSeconds)}, ` +
         `target=${formatDuration(reference.targetKeptSeconds)}, delta=${deltaSeconds.toFixed(2)}s, ` +
         `segments=${segments.length}, threshold=${analysis.thresholdDb.toFixed(2)} dB, ` +
         `UI=${analysis.thresholdDisplayDb.toFixed(2)} dB`
     )
-    if (!windowPass) {
-      console.log('     unexpected kept activity in Minecraft 1:21–1:24.5 reference window')
-    }
     if (!boundariesPass) {
       console.log('     TimeBolt boundary mismatch')
     }
