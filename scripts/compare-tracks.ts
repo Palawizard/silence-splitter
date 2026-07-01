@@ -1,5 +1,5 @@
 /**
- * Compare detection results across OBS track selection / mix strategies.
+ * Compare detection results across OBS track selections using activity-union mixing.
  * Run: npx tsx scripts/compare-tracks.ts <path>
  */
 import { resolve } from 'node:path'
