@@ -40,9 +40,13 @@ export function audioTrackLabel(
   codec: string,
   channels: number,
   language?: string,
-  title?: string
+  title?: string,
+  bitRate?: number
 ): string {
   const parts = [`Piste ${ordinal}`, codec, `${channels} can.`]
+  if (bitRate !== undefined && bitRate > 0) {
+    parts.push(`${Math.round(bitRate / 1000)} kbps`)
+  }
   if (title) {
     parts.push(title)
   } else if (language) {

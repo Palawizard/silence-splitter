@@ -9,7 +9,8 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "test:epic1": "tsx scripts/test-epic1.ts"
+    "test:epic1": "tsx scripts/test-epic1.ts",
+    "test:epic2": "tsx scripts/test-epic2.ts"
   },
   "dependencies": {
     "react": "^19.1.0",

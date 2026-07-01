@@ -67,7 +67,14 @@ Dernière exécution : **2026-07-01** — voir aussi `scripts/test-epic1.ts`.
 - [x] File path with spaces imports without error
 - [x] Missing ffmpeg shows startup error banner
 
+## Pipeline separation (Epic 2)
+
+- **Audio track selection** affects the analysis mix only (ffmpeg `amix` of selected streams).
+- **Exports** (Epic 3+) always reference the original source MP4 path — never a derived analysis file.
+- **Timeline preview** is read-only and derived from the same `KeepSegment[]` as XML export.
+
 ## Notes
 
 - Waveform extraction uses a mono mix of selected tracks at 8 kHz, decimated to at most 1500 buckets.
+- Silence analysis uses the same track mix at 16 kHz mono PCM (cached per file + track selection).
 - Fixture paths with spaces exercise the same code paths as user media; no special handling required beyond correct quoting in ffmpeg child processes.

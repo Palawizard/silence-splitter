@@ -11,6 +11,7 @@ type FfprobeStream = {
   avg_frame_rate?: string
   channels?: number
   sample_rate?: string
+  bit_rate?: string
   tags?: {
     language?: string
     title?: string
@@ -73,11 +74,13 @@ function mapVideoStream(stream: FfprobeStream): VideoStreamInfo {
 }
 
 function mapAudioStream(stream: FfprobeStream): AudioStreamInfo {
+  const bitRate = Number(stream.bit_rate)
   return {
     index: stream.index,
     codec: stream.codec_name ?? 'unknown',
     channels: stream.channels ?? 0,
     sampleRate: Number(stream.sample_rate) || 0,
+    bitRate: Number.isFinite(bitRate) && bitRate > 0 ? bitRate : undefined,
     language: stream.tags?.language,
     title: stream.tags?.title
   }

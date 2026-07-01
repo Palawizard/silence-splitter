@@ -1,3 +1,1 @@
-// Keep-segment builder — implemented in Epic 2
-
-export {}
+export { buildKeepSegments, filterSilentRegions } from './build-keep-segments'
