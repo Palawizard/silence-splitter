@@ -19,6 +19,7 @@ import {
 import './styles/app.css'
 
 type LoadState = 'idle' | 'probing' | 'waveform' | 'detecting' | 'ready' | 'error'
+type ExportState = 'idle' | 'exporting' | 'success'
 
 const PARAM_FIELDS: {
   key: keyof DetectionParams
@@ -43,6 +44,8 @@ export default function App() {
   const [filterBelowDb, setFilterBelowDb] = useState<number | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [exportState, setExportState] = useState<ExportState>('idle')
+  const [exportedPath, setExportedPath] = useState<string | null>(null)
 
   useEffect(() => {
     window.api.checkFfmpeg().then((status) => {
@@ -61,6 +64,8 @@ export default function App() {
       }
 
       setLoadState('detecting')
+      setExportState('idle')
+      setExportedPath(null)
       try {
         const result = await window.api.detectSilences({
           filePath: info.filePath,
@@ -114,6 +119,8 @@ export default function App() {
       setKeepSegments([])
       setPreview(null)
       setFilterBelowDb(null)
+      setExportState('idle')
+      setExportedPath(null)
 
       try {
         const info = await window.api.probeMedia(filePath)
@@ -169,6 +176,29 @@ export default function App() {
       return
     }
     setParams((current) => ({ ...current, [key]: numeric }))
+  }
+
+  async function handleExportResolve() {
+    if (!media || keepSegments.length === 0 || loadState !== 'ready') {
+      return
+    }
+
+    setExportState('exporting')
+    setExportedPath(null)
+    setErrorMessage(null)
+    try {
+      const result = await window.api.exportResolveXml({ media, keepSegments })
+      if (result.canceled) {
+        setExportState('idle')
+        return
+      }
+
+      setExportedPath(result.filePath ?? null)
+      setExportState('success')
+    } catch {
+      setExportState('idle')
+      setErrorMessage("Impossible d'exporter la timeline XML.")
+    }
   }
 
   const isLoading = loadState === 'probing' || loadState === 'detecting'
@@ -318,19 +348,44 @@ export default function App() {
           )}
 
           {preview && loadState === 'ready' && (
-            <section className="card card-wide">
-              <h2>Aperçu timeline</h2>
-              <p className="hint">
-                Zones vertes : passages conservés. Zones roses : silences coupés. Même découpage
-                que l&apos;export XML ({keepSegments.length} segment{keepSegments.length !== 1 ? 's' : ''}).
-              </p>
-              <TimelinePreview
-                data={preview}
-                durationSeconds={media?.durationSeconds ?? preview.waveform.durationSeconds}
-                filterBelowDb={filterBelowDb}
-                onRequestWaveformWindow={requestWaveformWindow}
-              />
-            </section>
+            <>
+              <section className="card card-wide">
+                <h2>Aperçu timeline</h2>
+                <p className="hint">
+                  Zones vertes : passages conservés. Zones roses : silences coupés. Même découpage
+                  que l&apos;export XML ({keepSegments.length} segment{keepSegments.length !== 1 ? 's' : ''}).
+                </p>
+                <TimelinePreview
+                  data={preview}
+                  durationSeconds={media?.durationSeconds ?? preview.waveform.durationSeconds}
+                  filterBelowDb={filterBelowDb}
+                  onRequestWaveformWindow={requestWaveformWindow}
+                />
+              </section>
+
+              <section className="card">
+                <h2>Exporter</h2>
+                <p className="hint">
+                  Crée une timeline XML à ouvrir dans DaVinci Resolve. La vidéo source reste
+                  inchangée.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleExportResolve}
+                  disabled={exportState === 'exporting'}
+                >
+                  {exportState === 'exporting'
+                    ? 'Export en cours…'
+                    : 'Exporter pour DaVinci Resolve'}
+                </button>
+                {exportState === 'success' && exportedPath && (
+                  <p className="export-success" role="status">
+                    Timeline XML enregistrée : <span>{exportedPath}</span>
+                  </p>
+                )}
+              </section>
+            </>
           )}
         </>
       )}

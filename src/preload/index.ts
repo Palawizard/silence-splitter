@@ -37,6 +37,16 @@ export type SilenceDetectionResponse = {
   thresholdDisplayDb: number
 }
 
+export type ResolveExportRequest = {
+  media: MediaInfo
+  keepSegments: KeepSegment[]
+}
+
+export type ResolveExportResponse = {
+  canceled: boolean
+  filePath?: string
+}
+
 const api = {
   checkFfmpeg: (): Promise<FfmpegStatus> => ipcRenderer.invoke('app:check-ffmpeg'),
   openVideoFile: (): Promise<string | null> => ipcRenderer.invoke('dialog:open-video'),
@@ -46,7 +56,9 @@ const api = {
   extractWaveformWindow: (request: WaveformWindowRequest): Promise<WaveformEnvelope> =>
     ipcRenderer.invoke('media:waveform-window', request),
   detectSilences: (request: SilenceDetectionRequest): Promise<SilenceDetectionResponse> =>
-    ipcRenderer.invoke('media:detect-silences', request)
+    ipcRenderer.invoke('media:detect-silences', request),
+  exportResolveXml: (request: ResolveExportRequest): Promise<ResolveExportResponse> =>
+    ipcRenderer.invoke('export:resolve-xml', request)
 }
 
 export type AppApi = typeof api

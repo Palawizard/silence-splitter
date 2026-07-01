@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { buildTimelineExportModel, createTimelineRate } from '../src/core/export'
 import { filePathToUrl, generateResolveXml } from '../src/core/export/resolve'
 import type { MediaInfo } from '../src/core/models/media-info'
+import { ensureXmlExtension, writeResolveXml } from '../src/main/export/resolve-xml'
 
 const media: MediaInfo = {
   filePath: 'C:\\Media Files\\source.mp4',
@@ -155,5 +159,32 @@ assert.match(
   /<pathurl>file:\/\/\/C:\/Media%20%26%20Files\/caf%C3%A9%20%231%25\.mp4<\/pathurl>/
 )
 assert.match(specialPathXml, /<name>Montage &lt;test&gt; &amp; &quot;validation&quot;<\/name>/)
+assert.equal(ensureXmlExtension('C:\\Exports\\timeline'), 'C:\\Exports\\timeline.xml')
+assert.equal(ensureXmlExtension('C:\\Exports\\timeline.XML'), 'C:\\Exports\\timeline.XML')
 
-console.log('Epic 3 shared export model and Resolve XML: PASS')
+async function testFileWriting(): Promise<void> {
+  const temporaryDirectory = await mkdtemp(join(tmpdir(), 'silence-splitter-epic3-'))
+  try {
+    const outputPath = await writeResolveXml(join(temporaryDirectory, 'timeline'), media, [
+      {
+        sourceStartSeconds: 1,
+        sourceEndSeconds: 2,
+        timelineStartSeconds: 0,
+        timelineEndSeconds: 1
+      }
+    ])
+    assert.equal(outputPath, join(temporaryDirectory, 'timeline.xml'))
+    const writtenXml = await readFile(outputPath, 'utf8')
+    assert.match(writtenXml, /<sequence id="sequence-1">/)
+    assert.match(writtenXml, /<clipitem id="audio-track-2-clip-1">/)
+  } finally {
+    await rm(temporaryDirectory, { recursive: true, force: true })
+  }
+}
+
+testFileWriting()
+  .then(() => console.log('Epic 3 shared export model and Resolve XML: PASS'))
+  .catch((error) => {
+    console.error(error)
+    process.exitCode = 1
+  })
