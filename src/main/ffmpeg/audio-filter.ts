@@ -3,13 +3,10 @@ export const ANALYSIS_SAMPLE_RATE = 16000
 export const DETECTION_SAMPLE_RATE = 48000
 
 function timingFilter(offsetSeconds: number): string {
-  if (offsetSeconds < -0.000_001) {
-    return `atrim=start=${(-offsetSeconds).toFixed(6)},asetpts=PTS-STARTPTS`
-  }
-  if (offsetSeconds > 0.000_001) {
-    return `adelay=${(offsetSeconds * 1000).toFixed(3)}:all=1,asetpts=PTS-STARTPTS`
-  }
-  return 'asetpts=PTS-STARTPTS'
+  const shift = offsetSeconds < 0
+    ? `PTS-${Math.abs(offsetSeconds).toFixed(3)}/TB`
+    : `PTS+${offsetSeconds.toFixed(3)}/TB`
+  return `asetpts=${shift},aresample=async=1:first_pts=0,aformat=sample_fmts=s16`
 }
 
 export function buildAudioFilter(
@@ -38,5 +35,5 @@ export function buildAudioFilter(
   const mixInputs = audioStreamIndices.map((_, i) => `[s${i}]`).join('')
   const count = audioStreamIndices.length
 
-  return `${monoSteps};${mixInputs}amix=inputs=${count}:duration=longest:dropout_transition=0,aresample=${sampleRate}[a]`
+  return `${monoSteps};${mixInputs}amix=inputs=${count},aresample=${sampleRate}[a]`
 }
