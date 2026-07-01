@@ -7,6 +7,7 @@ import {
   buildAudioFilter
 } from './audio-filter'
 import { runCommandBuffer, runCommandChunks } from './run'
+import { probeAudioTrackTimingOffsets } from './probe'
 
 export {
   ANALYSIS_SAMPLE_RATE,
@@ -22,9 +23,15 @@ function bufferToFloat32Samples(pcmBuffer: Buffer): Float32Array {
 async function extractMonoPcmAtRate(
   filePath: string,
   audioStreamIndices: number[],
-  sampleRate: number
+  sampleRate: number,
+  durationSeconds: number
 ): Promise<Float32Array> {
-  const filter = buildAudioFilter(audioStreamIndices, sampleRate)
+  const timingOffsets = await probeAudioTrackTimingOffsets(
+    filePath,
+    durationSeconds,
+    audioStreamIndices
+  )
+  const filter = buildAudioFilter(audioStreamIndices, sampleRate, timingOffsets)
   const pcmBuffer = await runCommandBuffer('ffmpeg', [
     '-v',
     'error',
@@ -51,7 +58,12 @@ export async function extractAnalysisPcm(
   durationSeconds: number,
   audioStreamIndices: number[]
 ): Promise<{ samples: Float32Array; sampleRate: number; durationSeconds: number }> {
-  const samples = await extractMonoPcmAtRate(filePath, audioStreamIndices, ANALYSIS_SAMPLE_RATE)
+  const samples = await extractMonoPcmAtRate(
+    filePath,
+    audioStreamIndices,
+    ANALYSIS_SAMPLE_RATE,
+    durationSeconds
+  )
   return {
     samples,
     sampleRate: ANALYSIS_SAMPLE_RATE,
@@ -62,9 +74,15 @@ export async function extractAnalysisPcm(
 /** Stream TimeBolt-compatible 40 ms RMS blocks without buffering full 48 kHz PCM. */
 export async function extractDetectionRmsWindows(
   filePath: string,
+  durationSeconds: number,
   audioStreamIndices: number[]
 ): Promise<{ rmsValues: number[]; sampleRate: number }> {
-  const filter = buildAudioFilter(audioStreamIndices, DETECTION_SAMPLE_RATE)
+  const timingOffsets = await probeAudioTrackTimingOffsets(
+    filePath,
+    durationSeconds,
+    audioStreamIndices
+  )
+  const filter = buildAudioFilter(audioStreamIndices, DETECTION_SAMPLE_RATE, timingOffsets)
   const windowSamples = Math.round(DETECTION_SAMPLE_RATE * 0.04)
   const rmsValues: number[] = []
   let pendingByte: number | null = null
@@ -127,7 +145,12 @@ export async function extractWaveformEnvelope(
   durationSeconds: number,
   audioStreamIndices: number[]
 ): Promise<WaveformEnvelope> {
-  const samples = await extractMonoPcmAtRate(filePath, audioStreamIndices, WAVEFORM_SAMPLE_RATE)
+  const samples = await extractMonoPcmAtRate(
+    filePath,
+    audioStreamIndices,
+    WAVEFORM_SAMPLE_RATE,
+    durationSeconds
+  )
   const bucketCount = Math.min(
     WAVEFORM_MAX_BUCKETS,
     Math.max(50, Math.round(durationSeconds * 4))

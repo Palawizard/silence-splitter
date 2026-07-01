@@ -135,7 +135,11 @@ async function main(): Promise<void> {
   const pcmModule = await import(pathToFileURL(resolve('src/main/ffmpeg/pcm.ts')).href)
   const media = await probe.probeMedia(videoPath)
   const tracks = defaultAnalysisTrackIndices(media.audioStreams)
-  const detection = await pcmModule.extractDetectionRmsWindows(videoPath, tracks)
+  const detection = await pcmModule.extractDetectionRmsWindows(
+    videoPath,
+    media.durationSeconds,
+    tracks
+  )
   const params = getPresetById('gaming-energetic').params
   const analysis = analyzeRmsLevels(
     detection.rmsValues,

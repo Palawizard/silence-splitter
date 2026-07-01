@@ -2,13 +2,19 @@ import { buildWaveformEnvelope } from '@core/audio/waveform-envelope'
 import { WAVEFORM_MAX_BUCKETS, type WaveformEnvelope } from '@core/models/waveform-envelope'
 import { WAVEFORM_SAMPLE_RATE, buildAudioFilter } from './audio-filter'
 import { runCommandBuffer } from './run'
+import { probeAudioTrackTimingOffsets } from './probe'
 
 export async function extractWaveformEnvelope(
   filePath: string,
   durationSeconds: number,
   audioStreamIndices: number[]
 ): Promise<WaveformEnvelope> {
-  const filter = buildAudioFilter(audioStreamIndices, WAVEFORM_SAMPLE_RATE)
+  const timingOffsets = await probeAudioTrackTimingOffsets(
+    filePath,
+    durationSeconds,
+    audioStreamIndices
+  )
+  const filter = buildAudioFilter(audioStreamIndices, WAVEFORM_SAMPLE_RATE, timingOffsets)
   const pcmBuffer = await runCommandBuffer('ffmpeg', [
     '-v',
     'error',

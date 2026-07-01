@@ -12,6 +12,7 @@ type FfprobeStream = {
   channels?: number
   sample_rate?: string
   bit_rate?: string
+  duration?: string
   tags?: {
     language?: string
     title?: string
@@ -75,18 +76,54 @@ function mapVideoStream(stream: FfprobeStream): VideoStreamInfo {
 
 function mapAudioStream(stream: FfprobeStream): AudioStreamInfo {
   const bitRate = Number(stream.bit_rate)
+  const durationSeconds = Number(stream.duration)
   return {
     index: stream.index,
     codec: stream.codec_name ?? 'unknown',
     channels: stream.channels ?? 0,
     sampleRate: Number(stream.sample_rate) || 0,
+    durationSeconds: Number.isFinite(durationSeconds) && durationSeconds > 0
+      ? durationSeconds
+      : undefined,
     bitRate: Number.isFinite(bitRate) && bitRate > 0 ? bitRate : undefined,
     language: stream.tags?.language,
     title: stream.tags?.title
   }
 }
 
+const mediaInfoCache = new Map<string, Promise<MediaInfo>>()
+
+export async function probeAudioTrackTimingOffsets(
+  filePath: string,
+  mediaDurationSeconds: number,
+  audioStreamIndices: number[]
+): Promise<Record<number, number>> {
+  const media = await probeMedia(filePath)
+  const selected = new Set(audioStreamIndices)
+  return Object.fromEntries(
+    media.audioStreams
+      .filter((stream) => selected.has(stream.index) && stream.durationSeconds !== undefined)
+      // TimeBolt rounds its per-track duration offset to milliseconds.
+      .map((stream) => [
+        stream.index,
+        Number((stream.durationSeconds! - mediaDurationSeconds).toFixed(3))
+      ])
+  )
+}
+
 export async function probeMedia(filePath: string): Promise<MediaInfo> {
+  const cached = mediaInfoCache.get(filePath)
+  if (cached) {
+    return cached
+  }
+
+  const pending = probeMediaUncached(filePath)
+  mediaInfoCache.set(filePath, pending)
+  pending.catch(() => mediaInfoCache.delete(filePath))
+  return pending
+}
+
+async function probeMediaUncached(filePath: string): Promise<MediaInfo> {
   const { stdout } = await runCommand('ffprobe', [
     '-v',
     'quiet',

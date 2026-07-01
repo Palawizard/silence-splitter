@@ -38,7 +38,11 @@ async function main(): Promise<void> {
   for (const reference of REFERENCES) {
     const media = await probe.probeMedia(reference.path)
     const tracks = defaultAnalysisTrackIndices(media.audioStreams)
-    const detection = await pcmModule.extractDetectionRmsWindows(reference.path, tracks)
+    const detection = await pcmModule.extractDetectionRmsWindows(
+      reference.path,
+      media.durationSeconds,
+      tracks
+    )
     const analysis = analyzeRmsLevels(
       detection.rmsValues,
       detection.sampleRate,

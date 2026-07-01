@@ -25,7 +25,11 @@ async function main(): Promise<void> {
   const params = getPresetById('gaming-energetic').params
 
   for (const scenario of scenarios) {
-    const detection = await pcmModule.extractDetectionRmsWindows(filePath, scenario.tracks)
+    const detection = await pcmModule.extractDetectionRmsWindows(
+      filePath,
+      media.durationSeconds,
+      scenario.tracks
+    )
     const analysis = analyzeRmsLevels(
       detection.rmsValues,
       detection.sampleRate,

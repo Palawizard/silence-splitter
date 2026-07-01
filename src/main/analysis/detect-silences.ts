@@ -32,7 +32,7 @@ export async function runSilenceDetection(
 ): Promise<SilenceDetectionResult> {
   const [pcm, detectionLevels] = await Promise.all([
     getAnalysisPcm(filePath, durationSeconds, audioStreamIndices),
-    extractDetectionRmsWindows(filePath, audioStreamIndices)
+    extractDetectionRmsWindows(filePath, durationSeconds, audioStreamIndices)
   ])
   const analysis = analyzeRmsLevels(
     detectionLevels.rmsValues,
