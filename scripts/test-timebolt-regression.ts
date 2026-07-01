@@ -26,6 +26,15 @@ const REFERENCES = [
     referenceJson: 'F:\\Fast Documents\\video minecraft\\2026-05-20 00-33-28.mp4.json',
     boundaryToleranceSeconds: 0.040_001,
     totalBoundaryErrorToleranceSeconds: 0.1
+  },
+  {
+    name: 'Chameleon correlated tracks',
+    path: 'F:\\Fast Documents\\Chameleon\\Chameleon 2026.06.30 - 21.19.51.04.mp4',
+    targetKeptSeconds: 43 * 60,
+    toleranceSeconds: 1,
+    referenceJson: 'F:\\Fast Documents\\Chameleon\\Chameleon 2026.06.30 - 21.19.51.04.mp4.json',
+    boundaryToleranceSeconds: 0.040_001,
+    totalBoundaryErrorToleranceSeconds: 0.1
   }
 ]
 
