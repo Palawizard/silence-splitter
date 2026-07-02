@@ -2,14 +2,17 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { SettingsProvider } from './context/SettingsProvider'
+import { I18nProvider } from './context/I18nProvider'
 import { ThemeProvider } from './context/ThemeProvider'
+import { applyDocumentLocale } from './i18n'
 import './styles/global.css'
 
 function applyBootstrapTheme(): void {
   try {
-    const { effectiveTheme } = window.api.getBootstrap().theme
-    document.documentElement.dataset.theme = effectiveTheme
-    document.documentElement.style.colorScheme = effectiveTheme
+    const bootstrap = window.api.getBootstrap()
+    document.documentElement.dataset.theme = bootstrap.theme.effectiveTheme
+    document.documentElement.style.colorScheme = bootstrap.theme.effectiveTheme
+    applyDocumentLocale(bootstrap.settings.locale)
   } catch {
     // index.html inline script already applied the OS theme.
   }
@@ -25,9 +28,11 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <SettingsProvider>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
+      <I18nProvider>
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
+      </I18nProvider>
     </SettingsProvider>
   </StrictMode>
 )

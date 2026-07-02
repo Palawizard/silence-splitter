@@ -14,6 +14,7 @@
     "test:epic3": "tsx scripts/test-epic3.ts",
     "test:epic4": "tsx scripts/test-epic4.ts",
     "test:epic5": "tsx scripts/test-epic5.ts",
+    "test:epic7": "tsx scripts/test-epic7.ts",
     "verify:resolve": "python scripts/verify-resolve-timeline.py",
     "test:timebolt": "tsx scripts/test-timebolt-regression.ts",
     "compare:timebolt": "tsx scripts/compare-timebolt-cuts.ts"
