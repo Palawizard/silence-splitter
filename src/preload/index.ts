@@ -4,7 +4,7 @@ import type { MediaInfo } from '@core/models/media-info'
 import type { TimelinePreviewData } from '@core/models/timeline-preview'
 import type { WaveformEnvelope } from '@core/models/waveform-envelope'
 import type { DetectionParams } from '@core/presets'
-import type { AppSettings } from '@core/settings'
+import type { AppSettings, ThemeMode } from '@core/settings'
 
 export type FfmpegStatus = {
   ffmpeg: boolean
@@ -70,6 +70,13 @@ export type TimelineExportResponse = {
   audioDirectoryPath?: string
 }
 
+export type EffectiveTheme = 'light' | 'dark'
+
+export type ThemeState = {
+  effectiveTheme: EffectiveTheme
+  themeMode: ThemeMode
+}
+
 const api = {
   checkFfmpeg: (): Promise<FfmpegStatus> => ipcRenderer.invoke('app:check-ffmpeg'),
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke('settings:get'),
@@ -82,6 +89,16 @@ const api = {
     ipcRenderer.on('settings:changed', listener)
     return () => {
       ipcRenderer.removeListener('settings:changed', listener)
+    }
+  },
+  getTheme: (): Promise<ThemeState> => ipcRenderer.invoke('theme:get'),
+  onThemeChanged: (callback: (state: ThemeState) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, state: ThemeState) => {
+      callback(state)
+    }
+    ipcRenderer.on('theme:changed', listener)
+    return () => {
+      ipcRenderer.removeListener('theme:changed', listener)
     }
   },
   openVideoFile: (): Promise<string | null> => ipcRenderer.invoke('dialog:open-video'),

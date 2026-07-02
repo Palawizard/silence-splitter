@@ -1,6 +1,7 @@
 import type { AppSettings } from '@core/settings'
 import { BrowserWindow, ipcMain } from 'electron'
 import { getCachedSettings, updateSettings } from '../settings'
+import { syncThemeToWindows } from '../theme'
 
 function broadcastSettingsChanged(settings: AppSettings): void {
   for (const window of BrowserWindow.getAllWindows()) {
@@ -14,6 +15,9 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:set', (_event, patch: Partial<AppSettings>) => {
     const next = updateSettings(patch)
     broadcastSettingsChanged(next)
+    if (patch.theme !== undefined) {
+      syncThemeToWindows()
+    }
     return next
   })
 }

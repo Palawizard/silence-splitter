@@ -2,8 +2,15 @@ import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'node:path'
 import { registerIpcHandlers } from './ipc/handlers'
 import { initSettings } from './settings'
+import {
+  registerThemeHandlers,
+  resolveEffectiveTheme,
+  syncThemeToWindows,
+  windowBackgroundColor
+} from './theme'
 
 function createWindow(): void {
+  const effectiveTheme = resolveEffectiveTheme()
   const mainWindow = new BrowserWindow({
     width: 960,
     height: 720,
@@ -11,6 +18,7 @@ function createWindow(): void {
     minHeight: 600,
     show: false,
     autoHideMenuBar: true,
+    backgroundColor: windowBackgroundColor(effectiveTheme),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -38,6 +46,8 @@ function createWindow(): void {
 app.whenReady().then(() => {
   initSettings()
   registerIpcHandlers()
+  registerThemeHandlers()
+  syncThemeToWindows()
   createWindow()
 
   app.on('activate', () => {
