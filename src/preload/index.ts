@@ -4,6 +4,7 @@ import type { MediaInfo } from '@core/models/media-info'
 import type { TimelinePreviewData } from '@core/models/timeline-preview'
 import type { WaveformEnvelope } from '@core/models/waveform-envelope'
 import type { DetectionParams } from '@core/presets'
+import type { AppSettings } from '@core/settings'
 
 export type FfmpegStatus = {
   ffmpeg: boolean
@@ -71,6 +72,18 @@ export type TimelineExportResponse = {
 
 const api = {
   checkFfmpeg: (): Promise<FfmpegStatus> => ipcRenderer.invoke('app:check-ffmpeg'),
+  getSettings: (): Promise<AppSettings> => ipcRenderer.invoke('settings:get'),
+  setSettings: (patch: Partial<AppSettings>): Promise<AppSettings> =>
+    ipcRenderer.invoke('settings:set', patch),
+  onSettingsChanged: (callback: (settings: AppSettings) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, settings: AppSettings) => {
+      callback(settings)
+    }
+    ipcRenderer.on('settings:changed', listener)
+    return () => {
+      ipcRenderer.removeListener('settings:changed', listener)
+    }
+  },
   openVideoFile: (): Promise<string | null> => ipcRenderer.invoke('dialog:open-video'),
   probeMedia: (filePath: string): Promise<MediaInfo> => ipcRenderer.invoke('media:probe', filePath),
   extractWaveform: (request: WaveformRequest): Promise<WaveformEnvelope> =>
