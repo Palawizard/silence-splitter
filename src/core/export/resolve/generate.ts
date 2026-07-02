@@ -46,14 +46,14 @@ function sourceFileXml(model: TimelineExportModel, indentation: string): string[
     `${indentation}    </video>`
   ]
 
-  source.audioTracks.forEach((track) => {
+  source.audioStreams.forEach((stream) => {
     lines.push(
       `${indentation}    <audio>`,
       `${indentation}      <samplecharacteristics>`,
-      `${indentation}        <samplerate>${track.sampleRate}</samplerate>`,
+      `${indentation}        <samplerate>${stream.sampleRate}</samplerate>`,
       `${indentation}        <depth>16</depth>`,
       `${indentation}      </samplecharacteristics>`,
-      `${indentation}      <channelcount>${track.channels}</channelcount>`,
+      `${indentation}      <channelcount>${stream.channels}</channelcount>`,
       `${indentation}    </audio>`
     )
   })
@@ -81,7 +81,7 @@ function linksXml(
       `${indentation}  <mediatype>audio</mediatype>`,
       `${indentation}  <trackindex>${track.timelineTrackIndex}</trackindex>`,
       `${indentation}  <clipindex>${clipIndex}</clipindex>`,
-      `${indentation}  <groupindex>1</groupindex>`,
+      `${indentation}  <groupindex>${track.groupIndex}</groupindex>`,
       `${indentation}</link>`
     )
   })
@@ -168,21 +168,22 @@ function audioTimelineXml(model: TimelineExportModel, indentation: string): stri
     `${indentation}  <outputs>`
   ]
 
-  let outputChannelIndex = 1
-  model.source.audioTracks.forEach((track) => {
+  model.source.audioStreams.forEach((stream) => {
+    const streamTracks = model.source.audioTracks.filter(
+      (track) => track.sourceStreamIndex === stream.sourceStreamIndex
+    )
     lines.push(
       `${indentation}    <group>`,
-      `${indentation}      <index>${track.timelineTrackIndex}</index>`,
-      `${indentation}      <numchannels>${track.channels}</numchannels>`
+      `${indentation}      <index>${stream.sourceStreamOrder}</index>`,
+      `${indentation}      <numchannels>${stream.channels}</numchannels>`
     )
-    for (let channel = 0; channel < track.channels; channel += 1) {
+    streamTracks.forEach((track) => {
       lines.push(
         `${indentation}      <channel>`,
-        `${indentation}        <index>${outputChannelIndex}</index>`,
+        `${indentation}        <index>${track.timelineTrackIndex}</index>`,
         `${indentation}      </channel>`
       )
-      outputChannelIndex += 1
-    }
+    })
     lines.push(`${indentation}    </group>`)
   })
 

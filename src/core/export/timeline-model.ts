@@ -102,6 +102,30 @@ export function buildTimelineExportModel(
   const rate = createTimelineRate(media.video.nominalFrameRate ?? media.video.frameRate)
   const durationFrames = secondsToFrame(media.durationSeconds, rate.framesPerSecond)
   const segments = buildSegments(keepSegments, durationFrames, rate.framesPerSecond)
+  const audioStreams = media.audioStreams.map((stream, index) => ({
+    sourceStreamOrder: index + 1,
+    sourceStreamIndex: stream.index,
+    codec: stream.codec,
+    channels: stream.channels,
+    sampleRate: stream.sampleRate,
+    language: stream.language,
+    title: stream.title
+  }))
+  let sourceTrackIndex = 0
+  const audioTracks = audioStreams.flatMap((stream) =>
+    Array.from({ length: stream.channels }, (_unused, channelIndex) => {
+      sourceTrackIndex += 1
+      return {
+        timelineTrackIndex: sourceTrackIndex,
+        sourceTrackIndex,
+        sourceStreamOrder: stream.sourceStreamOrder,
+        sourceStreamIndex: stream.sourceStreamIndex,
+        sourceChannelIndex: channelIndex + 1,
+        groupIndex: stream.sourceStreamOrder,
+        sampleRate: stream.sampleRate
+      }
+    })
+  )
 
   return {
     name: timelineName,
@@ -113,16 +137,8 @@ export function buildTimelineExportModel(
       videoStreamIndex: media.video.index,
       width: media.video.width,
       height: media.video.height,
-      audioTracks: media.audioStreams.map((stream, index) => ({
-        timelineTrackIndex: index + 1,
-        sourceStreamIndex: stream.index,
-        sourceTrackIndex: index + 1,
-        codec: stream.codec,
-        channels: stream.channels,
-        sampleRate: stream.sampleRate,
-        language: stream.language,
-        title: stream.title
-      }))
+      audioStreams,
+      audioTracks
     },
     segments,
     durationFrames: segments.at(-1)?.timelineOutFrame ?? 0

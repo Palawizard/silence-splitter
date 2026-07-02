@@ -13,18 +13,28 @@ export type TimelineExportSource = {
   videoStreamIndex: number
   width: number
   height: number
+  audioStreams: TimelineExportAudioStream[]
   audioTracks: TimelineExportAudioTrack[]
 }
 
-export type TimelineExportAudioTrack = {
-  timelineTrackIndex: number
+export type TimelineExportAudioStream = {
+  sourceStreamOrder: number
   sourceStreamIndex: number
-  sourceTrackIndex: number
   codec: string
   channels: number
   sampleRate: number
   language?: string
   title?: string
+}
+
+export type TimelineExportAudioTrack = {
+  timelineTrackIndex: number
+  sourceTrackIndex: number
+  sourceStreamOrder: number
+  sourceStreamIndex: number
+  sourceChannelIndex: number
+  groupIndex: number
+  sampleRate: number
 }
 
 export type TimelineExportSegment = {

@@ -86,11 +86,10 @@ assert.deepEqual(model.segments, [
 ])
 assert.equal(model.durationFrames, 88)
 assert.equal(model.source.fileName, 'source.mp4')
-assert.deepEqual(model.source.audioTracks, [
+assert.deepEqual(model.source.audioStreams, [
   {
-    timelineTrackIndex: 1,
+    sourceStreamOrder: 1,
     sourceStreamIndex: 2,
-    sourceTrackIndex: 1,
     codec: 'aac',
     channels: 2,
     sampleRate: 48000,
@@ -98,14 +97,42 @@ assert.deepEqual(model.source.audioTracks, [
     title: 'Microphone'
   },
   {
-    timelineTrackIndex: 2,
+    sourceStreamOrder: 2,
     sourceStreamIndex: 5,
-    sourceTrackIndex: 2,
     codec: 'aac',
     channels: 1,
     sampleRate: 44100,
     language: undefined,
     title: 'Jeu'
+  }
+])
+assert.deepEqual(model.source.audioTracks, [
+  {
+    timelineTrackIndex: 1,
+    sourceTrackIndex: 1,
+    sourceStreamOrder: 1,
+    sourceStreamIndex: 2,
+    sourceChannelIndex: 1,
+    groupIndex: 1,
+    sampleRate: 48000
+  },
+  {
+    timelineTrackIndex: 2,
+    sourceTrackIndex: 2,
+    sourceStreamOrder: 1,
+    sourceStreamIndex: 2,
+    sourceChannelIndex: 2,
+    groupIndex: 1,
+    sampleRate: 48000
+  },
+  {
+    timelineTrackIndex: 3,
+    sourceTrackIndex: 3,
+    sourceStreamOrder: 2,
+    sourceStreamIndex: 5,
+    sourceChannelIndex: 1,
+    groupIndex: 2,
+    sampleRate: 44100
   }
 ])
 assert.throws(() => createTimelineRate(27.5), /Unsupported source frame rate/)
@@ -149,16 +176,16 @@ assert.match(
   /<clipitem id="video-clip-2">[\s\S]*?<start>38<\/start>[\s\S]*?<end>88<\/end>[\s\S]*?<in>125<\/in>[\s\S]*?<out>175<\/out>/
 )
 assert.equal(xml.match(/<file id="source-file-1">/g)?.length, 1)
-assert.equal(xml.match(/<file id="source-file-1"\/>/g)?.length, 5)
-assert.equal(xml.match(/<clipitem id="audio-track-\d+-clip-\d+">/g)?.length, 4)
-assert.equal(xml.match(/<mediatype>audio<\/mediatype>/g)?.length, 8)
+assert.equal(xml.match(/<file id="source-file-1"\/>/g)?.length, 7)
+assert.equal(xml.match(/<clipitem id="audio-track-\d+-clip-\d+">/g)?.length, 6)
+assert.equal(xml.match(/<mediatype>audio<\/mediatype>/g)?.length, 12)
 assert.match(
   xml,
   /<clipitem id="audio-track-1-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<in>25<\/in>[\s\S]*?<out>63<\/out>[\s\S]*?<mediatype>audio<\/mediatype>[\s\S]*?<trackindex>1<\/trackindex>/
 )
 assert.match(
   xml,
-  /<clipitem id="audio-track-2-clip-2">[\s\S]*?<start>38<\/start>[\s\S]*?<end>88<\/end>[\s\S]*?<in>125<\/in>[\s\S]*?<out>175<\/out>[\s\S]*?<mediatype>audio<\/mediatype>[\s\S]*?<trackindex>2<\/trackindex>/
+  /<clipitem id="audio-track-3-clip-2">[\s\S]*?<start>38<\/start>[\s\S]*?<end>88<\/end>[\s\S]*?<in>125<\/in>[\s\S]*?<out>175<\/out>[\s\S]*?<mediatype>audio<\/mediatype>[\s\S]*?<trackindex>3<\/trackindex>/
 )
 assert.equal(xml.match(/<channelcount>2<\/channelcount>/g)?.length, 1)
 assert.equal(xml.match(/<channelcount>1<\/channelcount>/g)?.length, 1)
@@ -209,7 +236,7 @@ async function testFileWriting(): Promise<void> {
     }
   ])
   assert.deepEqual(
-    fixtureModel.source.audioTracks.map((track) => track.sourceStreamIndex),
+    fixtureModel.source.audioStreams.map((stream) => stream.sourceStreamIndex),
     fixtureMedia.audioStreams.map((stream) => stream.index)
   )
   const fixtureXml = generateResolveXml(fixtureModel)
@@ -228,7 +255,7 @@ async function testFileWriting(): Promise<void> {
     assert.equal(outputPath, join(temporaryDirectory, 'timeline.xml'))
     const writtenXml = await readFile(outputPath, 'utf8')
     assert.match(writtenXml, /<sequence id="sequence-1">/)
-    assert.match(writtenXml, /<clipitem id="audio-track-2-clip-1">/)
+    assert.match(writtenXml, /<clipitem id="audio-track-3-clip-1">/)
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true })
   }
