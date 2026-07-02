@@ -8,6 +8,7 @@ import {
 } from '@core/playback'
 import type { KeepSegment } from '@core/models/keep-segment'
 import type { TimelinePreviewData } from '@core/models/timeline-preview'
+import { useI18n } from '../context/I18nProvider'
 import { formatDuration } from '../utils/format'
 
 type TimelinePreviewProps = {
@@ -200,6 +201,7 @@ export default function TimelinePreview({
   keepSegments,
   onRequestWaveformWindow
 }: TimelinePreviewProps) {
+  const { locale, t, tp } = useI18n()
   const { keepRegions, cutRegions, segmentCount, keptDurationSeconds, cutDurationSeconds } = data
   const cutDuration = cutTimelineDuration(keepSegments)
 
@@ -626,7 +628,7 @@ export default function TimelinePreview({
         isPlayingRef.current = false
         setIsPlaying(false)
         setIsPlaybackPreparing(false)
-        setPlaybackError("Impossible de lire l'aperçu audio.")
+        setPlaybackError(t('errors.playbackPreview'))
       }
     } finally {
       if (fillingGenerationRef.current === generation) {
@@ -802,22 +804,23 @@ export default function TimelinePreview({
   return (
     <div className="timeline-preview">
       <div className="timeline-summary">
+        <span>{tp('preview.segmentCount', segmentCount)}</span>
+        <span className="timeline-summary-sep">·</span>
         <span>
-          {segmentCount} segment{segmentCount !== 1 ? 's' : ''} conservé
-          {segmentCount !== 1 ? 's' : ''}
+          {tp('preview.keptDuration', Math.round(keptDurationSeconds), {
+            duration: formatDuration(keptDurationSeconds, locale)
+          })}
         </span>
         <span className="timeline-summary-sep">·</span>
         <span>
-          {formatDuration(keptDurationSeconds)} gardé{keptDurationSeconds !== 1 ? 's' : ''}
-        </span>
-        <span className="timeline-summary-sep">·</span>
-        <span>
-          {formatDuration(cutDurationSeconds)} coupé{cutDurationSeconds !== 1 ? 's' : ''}
+          {tp('preview.cutDuration', Math.round(cutDurationSeconds), {
+            duration: formatDuration(cutDurationSeconds, locale)
+          })}
         </span>
         {filterBelowDb !== null && filterBelowDb !== undefined && (
           <>
             <span className="timeline-summary-sep">·</span>
-            <span>Seuil {filterBelowDb.toFixed(0)} dB</span>
+            <span>{t('preview.threshold', { db: filterBelowDb.toFixed(0) })}</span>
           </>
         )}
       </div>
@@ -830,7 +833,7 @@ export default function TimelinePreview({
           onClick={handleTimelineClick}
           tabIndex={0}
           role="region"
-          aria-label="Aperçu de la timeline avec lecture audio"
+          aria-label={t('preview.ariaRegion')}
         >
           <div className="timeline-canvas" style={{ width: canvasWidth }}>
             <svg
@@ -962,7 +965,11 @@ export default function TimelinePreview({
               }
               disabled={!canPlay || isPlaybackPreparing}
               aria-label={
-                isPlaybackPreparing ? 'Préparation audio' : isPlaying ? 'Pause' : 'Lecture'
+                isPlaybackPreparing
+                  ? t('preview.transportPrepare')
+                  : isPlaying
+                    ? t('preview.transportPause')
+                    : t('preview.transportPlay')
               }
               aria-busy={isPlaybackPreparing}
             >
@@ -979,7 +986,7 @@ export default function TimelinePreview({
               className="btn timeline-transport-button timeline-transport-button--icon"
               onClick={stopPlayback}
               disabled={!canPlay}
-              aria-label="Arrêter"
+              aria-label={t('preview.transportStop')}
             >
               <Square size={16} aria-hidden />
             </button>
@@ -991,7 +998,7 @@ export default function TimelinePreview({
                 type="button"
                 className="btn timeline-scroll-button"
                 onClick={() => nudgeScroll(-viewportWidth * 0.5)}
-                aria-label="Défiler vers la gauche"
+                aria-label={t('preview.scrollLeft')}
               >
                 ‹
               </button>
@@ -1004,13 +1011,13 @@ export default function TimelinePreview({
                 step={1}
                 value={scrollLeft}
                 onChange={(e) => handleSliderChange(Number(e.target.value))}
-                aria-label="Position dans la timeline"
+                aria-label={t('preview.positionSlider')}
               />
               <button
                 type="button"
                 className="btn timeline-scroll-button"
                 onClick={() => nudgeScroll(viewportWidth * 0.5)}
-                aria-label="Défiler vers la droite"
+                aria-label={t('preview.scrollRight')}
               >
                 ›
               </button>
@@ -1022,13 +1029,13 @@ export default function TimelinePreview({
               {formatTimeLabel(viewStartSeconds)} – {formatTimeLabel(viewEndSeconds)}
             </span>
             <span className="timeline-playback-time">
-              {formatDuration(playbackPositionSeconds)} / {formatDuration(cutDuration)}
+              {formatDuration(playbackPositionSeconds, locale)} / {formatDuration(cutDuration, locale)}
             </span>
           </div>
         </div>
       </div>
 
-      <p className="timeline-hint">Lecture du montage avec le mix des pistes cochées.</p>
+      <p className="timeline-hint">{t('preview.playbackHint')}</p>
       {playbackError && <p className="timeline-playback-error">{playbackError}</p>}
     </div>
   )
