@@ -1,6 +1,6 @@
 import { buildCutPlaybackRanges, cutTimelineDuration } from '@core/playback'
 import type { KeepSegment } from '@core/models/keep-segment'
-import { getAnalysisPcm } from './pcm-cache'
+import { getPlaybackPcm } from './pcm-cache'
 
 export type PlaybackChunk = {
   samples: ArrayBuffer
@@ -18,7 +18,7 @@ export async function buildPlaybackChunk(
   timelineStartSeconds: number,
   requestedDurationSeconds: number
 ): Promise<PlaybackChunk> {
-  const pcm = await getAnalysisPcm(filePath, mediaDurationSeconds, audioStreamIndices)
+  const pcm = await getPlaybackPcm(filePath, mediaDurationSeconds, audioStreamIndices)
   const ranges = buildCutPlaybackRanges(
     keepSegments,
     timelineStartSeconds,

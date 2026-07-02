@@ -1,6 +1,9 @@
+import { PLAYBACK_SAMPLE_RATE } from '@core/audio/types'
+
 export const WAVEFORM_SAMPLE_RATE = 8000
 export const ANALYSIS_SAMPLE_RATE = 16000
 export const DETECTION_SAMPLE_RATE = 48000
+export { PLAYBACK_SAMPLE_RATE }
 
 function timingFilter(offsetSeconds: number): string {
   const shift = offsetSeconds < 0

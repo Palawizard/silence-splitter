@@ -2,6 +2,7 @@ export { rmsToDbFs, dbFsToRms, toTimeboltDisplayDb, TIMEBOLT_DISPLAY_DB_OFFSET }
 export { computePeaks, normalizePeaksForDisplay, resamplePeaksToColumns } from './peaks'
 export { buildWaveformEnvelope, buildAnalysisWaveformEnvelope, defaultPreviewBucketCount } from './waveform-envelope'
 export type { PcmAudio, SilentRegion } from './types'
+export { PLAYBACK_SAMPLE_RATE } from './types'
 export {
   DETECTION_HOP_MS,
   DETECTION_WINDOW_MS,

@@ -14,6 +14,7 @@ import { getPresetById } from '../src/core/presets'
 import {
   buildCutPlaybackRanges,
   cutTimelineDuration,
+  sourceTimeToTimelineTime,
   timelineTimeToSourceTime
 } from '../src/core/playback'
 
@@ -113,6 +114,13 @@ async function main(): Promise<void> {
       playbackRanges[1].sourceStartSeconds === 5 &&
       playbackRanges[1].sourceEndSeconds === 6.5,
     '1.5–3.5 s montage → 1.5–2 s puis 5–6.5 s source'
+  )
+  record(
+    'cut playback — source time maps back to montage',
+    sourceTimeToTimelineTime(playbackSegments, 1.75) === 1.75 &&
+      sourceTimeToTimelineTime(playbackSegments, 4) === 2 &&
+      sourceTimeToTimelineTime(playbackSegments, 5.5) === 2.5,
+    'seek from source positions in keep and cut regions'
   )
 
   const hopWindows = computeRmsWindows(new Float32Array(100), 1000)
@@ -229,9 +237,9 @@ async function main(): Promise<void> {
   )
   record(
     'single-track.mp4 — cut preview PCM chunk',
-    playbackChunk.sampleRate === 16000 &&
-      playbackChunk.samples.byteLength === 16000 * Float32Array.BYTES_PER_ELEMENT &&
-      Math.abs(playbackChunk.durationSeconds - 1) < 1 / 16000 &&
+    playbackChunk.sampleRate === 48000 &&
+      playbackChunk.samples.byteLength === 48000 * Float32Array.BYTES_PER_ELEMENT &&
+      Math.abs(playbackChunk.durationSeconds - 1) < 1 / 48000 &&
       playbackChunk.ended === false,
     `duration=${playbackChunk.durationSeconds.toFixed(2)}s, bytes=${playbackChunk.samples.byteLength}`
   )

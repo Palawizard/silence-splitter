@@ -4,6 +4,9 @@ export type PcmAudio = {
   durationSeconds: number
 }
 
+/** Preview playback sample rate — matches detection grid, higher than analysis waveform cache. */
+export const PLAYBACK_SAMPLE_RATE = 48000
+
 export type SilentRegion = {
   startSeconds: number
   endSeconds: number

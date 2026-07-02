@@ -210,64 +210,25 @@
   margin-top: 0.5rem;
 }
 
-.audio-preview {
-  margin-bottom: 1rem;
-  padding: 0.75rem;
+.timeline-stage {
   border: 1px solid #e4e4e7;
   border-radius: 8px;
-  background: #fafafa;
+  background: #fff;
+  overflow: hidden;
 }
 
-.audio-preview-controls {
-  display: grid;
-  grid-template-columns: auto minmax(120px, 1fr) auto;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.audio-preview-button {
-  min-width: 4.5rem;
-}
-
-.audio-preview-slider {
-  width: 100%;
-  accent-color: #18181b;
-  cursor: pointer;
-}
-
-.audio-preview-time {
-  min-width: 7.5rem;
-  color: #52525b;
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.audio-preview-hint,
-.audio-preview-error {
+.timeline-hint,
+.timeline-playback-error {
   margin: 0.5rem 0 0;
   font-size: 0.75rem;
 }
 
-.audio-preview-hint {
+.timeline-hint {
   color: #71717a;
 }
 
-.audio-preview-error {
+.timeline-playback-error {
   color: #b91c1c;
-}
-
-@media (max-width: 620px) {
-  .audio-preview-controls {
-    grid-template-columns: auto 1fr;
-  }
-
-  .audio-preview-time {
-    grid-column: 1 / -1;
-    min-width: 0;
-    text-align: left;
-  }
 }
 
 .timeline-summary {
@@ -285,11 +246,10 @@
 
 .timeline-viewport {
   position: relative;
-  border: 1px solid #e4e4e7;
-  border-radius: 8px;
   overflow-x: auto;
   overflow-y: hidden;
   background: #fafafa;
+  cursor: pointer;
   scrollbar-width: thin;
   scrollbar-color: #a1a1aa #f4f4f5;
 }
@@ -326,11 +286,42 @@
 
 .timeline-track {
   display: block;
-  height: 110px;
+  height: 120px;
+}
+
+.timeline-ruler-background {
+  fill: #fff;
+}
+
+.timeline-ruler-baseline {
+  stroke: #d4d4d8;
+  stroke-width: 1;
+}
+
+.timeline-ruler-tick {
+  stroke: #a1a1aa;
+  stroke-width: 1;
+}
+
+.timeline-ruler-label {
+  fill: #71717a;
+  font-size: 11px;
+  font-family: inherit;
 }
 
 .timeline-background {
   fill: #f8fafc;
+}
+
+.timeline-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: #18181b;
+  pointer-events: none;
+  z-index: 3;
 }
 
 .timeline-cut-zone {
@@ -357,47 +348,57 @@
   display: none;
 }
 
-.timeline-scale {
-  position: relative;
-  height: 1.35rem;
-  margin-top: 0.25rem;
-  margin-bottom: 0.35rem;
+.timeline-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
   border-top: 1px solid #e4e4e7;
-  background: #fff;
+  background: #fafafa;
 }
 
-.timeline-tick {
-  position: absolute;
-  transform: translateX(-50%);
-  font-size: 0.6875rem;
-  color: #71717a;
-  white-space: nowrap;
-  top: 0.2rem;
+.timeline-transport {
+  display: flex;
+  gap: 0.5rem;
 }
 
-.timeline-tick:first-child {
-  transform: translateX(0);
+.timeline-transport-button {
+  min-width: 4.25rem;
 }
 
-.timeline-tick:last-child {
-  transform: translateX(-100%);
+.timeline-transport-button--icon {
+  min-width: 2.25rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+
+.timeline-transport-spinner {
+  animation: timeline-transport-spin 0.8s linear infinite;
+}
+
+@keyframes timeline-transport-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .timeline-nav {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #e4e4e7;
+  gap: 0.35rem;
+  min-width: 0;
 }
 
-.timeline-nav-label {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #52525b;
-  white-space: nowrap;
+.timeline-scroll-button {
+  min-width: 2rem;
+  padding-inline: 0.45rem;
 }
 
 .timeline-nav-slider {
@@ -407,11 +408,37 @@
   cursor: pointer;
 }
 
-.timeline-nav-time {
+.timeline-playback-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  min-width: 7.5rem;
+}
+
+.timeline-nav-time,
+.timeline-playback-time {
   font-size: 0.75rem;
   color: #71717a;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  min-width: 7.5rem;
-  text-align: right;
+}
+
+.timeline-playback-time {
+  color: #3f3f46;
+  font-weight: 500;
+}
+
+@media (max-width: 720px) {
+  .timeline-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-playback-meta {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+  }
 }

@@ -1,5 +1,6 @@
 import { buildWaveformEnvelope } from '@core/audio/waveform-envelope'
 import { WAVEFORM_MAX_BUCKETS, type WaveformEnvelope } from '@core/models/waveform-envelope'
+import { PLAYBACK_SAMPLE_RATE } from '@core/audio/types'
 import {
   ANALYSIS_SAMPLE_RATE,
   DETECTION_SAMPLE_RATE,
@@ -12,6 +13,7 @@ import { probeAudioTrackTimingOffsets } from './probe'
 export {
   ANALYSIS_SAMPLE_RATE,
   DETECTION_SAMPLE_RATE,
+  PLAYBACK_SAMPLE_RATE,
   WAVEFORM_SAMPLE_RATE,
   buildAudioFilter
 }
@@ -67,6 +69,24 @@ export async function extractAnalysisPcm(
   return {
     samples,
     sampleRate: ANALYSIS_SAMPLE_RATE,
+    durationSeconds
+  }
+}
+
+export async function extractPlaybackPcm(
+  filePath: string,
+  durationSeconds: number,
+  audioStreamIndices: number[]
+): Promise<{ samples: Float32Array; sampleRate: number; durationSeconds: number }> {
+  const samples = await extractMonoPcmAtRate(
+    filePath,
+    audioStreamIndices,
+    PLAYBACK_SAMPLE_RATE,
+    durationSeconds
+  )
+  return {
+    samples,
+    sampleRate: PLAYBACK_SAMPLE_RATE,
     durationSeconds
   }
 }

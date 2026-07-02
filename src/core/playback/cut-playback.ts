@@ -36,6 +36,30 @@ export function timelineTimeToSourceTime(
   )
 }
 
+/** Map a source-time position to cut-timeline time for playback seek. */
+export function sourceTimeToTimelineTime(
+  segments: KeepSegment[],
+  sourceSeconds: number
+): number {
+  if (segments.length === 0) {
+    return 0
+  }
+
+  const clamped = Math.max(0, sourceSeconds)
+  for (const segment of segments) {
+    if (clamped >= segment.sourceStartSeconds && clamped < segment.sourceEndSeconds) {
+      return segment.timelineStartSeconds + (clamped - segment.sourceStartSeconds)
+    }
+  }
+
+  const nextKeep = segments.find((segment) => segment.sourceStartSeconds > clamped)
+  if (nextKeep) {
+    return nextKeep.timelineStartSeconds
+  }
+
+  return cutTimelineDuration(segments)
+}
+
 export function buildCutPlaybackRanges(
   segments: KeepSegment[],
   timelineStartSeconds: number,
