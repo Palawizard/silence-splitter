@@ -107,6 +107,11 @@ function computePixelsPerSecond(duration: number, viewportWidth: number): number
   return targetPps
 }
 
+function readCssColor(variable: string, fallback: string): string {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(variable).trim()
+  return value || fallback
+}
+
 function drawWindowWaveform(
   canvas: HTMLCanvasElement,
   peaks: number[],
@@ -124,7 +129,7 @@ function drawWindowWaveform(
   canvas.height = Math.ceil(WAVE_LANE_HEIGHT * dpr)
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, bitmapWidth, WAVE_LANE_HEIGHT)
-  ctx.fillStyle = '#1e293b'
+  ctx.fillStyle = readCssColor('--color-timeline-waveform-bar', '#1e293b')
 
   const waveMidY = WAVE_LANE_HEIGHT / 2
   const columnCount = Math.min(peaks.length, bitmapWidth)
@@ -319,6 +324,22 @@ export default function TimelinePreview({
     observer.observe(viewport)
     return () => observer.disconnect()
   }, [updateViewportWidth])
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const canvas = waveformCanvasRef.current
+      if (canvas && windowPeaks.length > 0 && viewportWidth > 0) {
+        drawWindowWaveform(canvas, windowPeaks, viewportWidth, maxHalfHeight)
+      }
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    })
+
+    return () => observer.disconnect()
+  }, [windowPeaks, viewportWidth, maxHalfHeight])
 
   useEffect(() => {
     if (scrollLeft > maxScroll) {
