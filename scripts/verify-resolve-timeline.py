@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -59,7 +60,7 @@ def file_url_to_path(value: str) -> Path:
     return Path(decoded)
 
 
-def probe_audio_channels(media_path: Path) -> list[int]:
+def probe_audio_streams(media_path: Path) -> list[dict[str, object]]:
     result = subprocess.run(
         [
             "ffprobe",
@@ -68,7 +69,7 @@ def probe_audio_channels(media_path: Path) -> list[int]:
             "-select_streams",
             "a",
             "-show_entries",
-            "stream=index,channels",
+            "stream=index,channels,duration",
             "-of",
             "json",
             str(media_path),
@@ -79,7 +80,25 @@ def probe_audio_channels(media_path: Path) -> list[int]:
         encoding="utf-8",
     )
     streams = json.loads(result.stdout).get("streams", [])
-    return [int(stream.get("channels", 0)) for stream in streams]
+    return streams
+
+
+def probe_media_duration(media_path: Path) -> float:
+    result = subprocess.run(
+        [
+            "ffprobe", "-v", "error", "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1", str(media_path),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    return float(result.stdout.strip())
+
+
+def javascript_round(value: float) -> int:
+    return math.floor(value + 0.5)
 
 
 def decoded_audio_hash(media_path: Path, map_specifier: str) -> str:
@@ -124,7 +143,8 @@ def validate_xml(xml_path: Path, verification: Verification) -> dict[str, object
         raise ValueError("The XML does not contain a source media path")
 
     media_path = file_url_to_path(path_url)
-    channels_per_stream = probe_audio_channels(media_path)
+    audio_streams = probe_audio_streams(media_path)
+    channels_per_stream = [int(stream.get("channels", 0)) for stream in audio_streams]
     expected_audio_tracks = sum(channels_per_stream)
     expected_track_sources = [
         (stream_index, channel_index)
@@ -136,6 +156,17 @@ def validate_xml(xml_path: Path, verification: Verification) -> dict[str, object
         for file_element in sequence.findall(".//file")
         if file_element.attrib.get("id") and file_element.findtext("pathurl")
     }
+    timebase = int(sequence.findtext("./rate/timebase", "0"))
+    ntsc = sequence.findtext("./rate/ntsc", "FALSE") == "TRUE"
+    frame_rate = timebase * (1000 / 1001 if ntsc else 1)
+    media_duration = probe_media_duration(media_path)
+    expected_source_offsets = [
+        javascript_round(
+            -round(float(stream.get("duration", media_duration)) - media_duration, 3)
+            * frame_rate
+        )
+        for stream in audio_streams
+    ]
 
     verification.check(media_path.is_file(), f"source media exists: {media_path}")
     verification.check(len(video_tracks) == 1, "XML contains exactly one video track")
@@ -149,12 +180,25 @@ def validate_xml(xml_path: Path, verification: Verification) -> dict[str, object
     source_track_indices: list[int] = []
     sidecar_paths: list[Path] = []
     verified_sidecar_streams: set[int] = set()
+    audio_timings: list[list[tuple[int, int, int, int]]] = []
     for track_index, track in enumerate(audio_tracks, start=1):
         stream_order, channel_index = expected_track_sources[track_index - 1]
         items = as_list(track, "clipitem")
+        track_timings = [timing(item) for item in items]
+        audio_timings.append(track_timings)
+        source_offset = expected_source_offsets[stream_order - 1]
         verification.check(
-            [timing(item) for item in items] == video_timings,
-            f"XML audio track {track_index} matches every video cut",
+            len(track_timings) == len(video_timings)
+            and all(
+                audio_start == video_start
+                and audio_end == video_end
+                and audio_in == video_in + source_offset
+                and audio_out == video_out + source_offset
+                for (audio_start, audio_end, audio_in, audio_out),
+                    (video_start, video_end, video_in, video_out)
+                in zip(track_timings, video_timings)
+            ),
+            f"XML audio track {track_index} applies its {source_offset:+d}-frame analysis alignment",
         )
         indices = {
             text_int(source_track, "trackindex")
@@ -193,7 +237,10 @@ def validate_xml(xml_path: Path, verification: Verification) -> dict[str, object
             verification.check(False, f"XML audio track {track_index} has a sidecar path")
             continue
         sidecar_paths.append(sidecar_path)
-        sidecar_channels = probe_audio_channels(sidecar_path) if sidecar_path.is_file() else []
+        sidecar_channels = (
+            [int(stream.get("channels", 0)) for stream in probe_audio_streams(sidecar_path)]
+            if sidecar_path.is_file() else []
+        )
         expected_channels = channels_per_stream[stream_order - 1]
         verification.check(
             sidecar_path.is_file(),
@@ -226,14 +273,12 @@ def validate_xml(xml_path: Path, verification: Verification) -> dict[str, object
         "XML links video with every original audio stream",
     )
 
-    timebase = int(sequence.findtext("./rate/timebase", "0"))
-    ntsc = sequence.findtext("./rate/ntsc", "FALSE") == "TRUE"
-    frame_rate = timebase * (1000 / 1001 if ntsc else 1)
     return {
         "name": sequence.findtext("name", ""),
         "media_path": media_path,
         "audio_paths": sidecar_paths,
         "video_timings": video_timings,
+        "audio_timings": audio_timings,
         "expected_audio_tracks": expected_audio_tracks,
         "expected_audio_subtypes": [
             "mono" for _stream, _channel in expected_track_sources
@@ -347,9 +392,14 @@ def validate_resolve(expected: dict[str, object], verification: Verification) ->
 
     for track_index in range(1, audio_tracks + 1):
         items = timeline.GetItemListInTrack("audio", track_index) or []
+        expected_audio_timings = expected["audio_timings"][track_index - 1]
         verification.check(
-            [resolve_item_timing(item) for item in items] == actual_video_timings,
-            f"Resolve audio track {track_index} matches every video cut",
+            len(items) == len(expected_audio_timings)
+            and all(
+                resolve_timing_matches_xml(expected_timing, resolve_item_timing(item))
+                for expected_timing, item in zip(expected_audio_timings, items)
+            ),
+            f"Resolve audio track {track_index} preserves its aligned source cuts",
         )
         expected_subtype = expected["expected_audio_subtypes"][track_index - 1]
         if expected_subtype is not None:

@@ -1,4 +1,5 @@
 import type { AudioStreamInfo, MediaInfo, VideoStreamInfo } from '@core/models/media-info'
+import { audioTrackTimingOffsetSeconds } from '@core/audio/track-timing'
 import { runCommand } from './run'
 
 type FfprobeStream = {
@@ -108,7 +109,7 @@ export async function probeAudioTrackTimingOffsets(
       // TimeBolt rounds its per-track duration offset to milliseconds.
       .map((stream) => [
         stream.index,
-        Number((stream.durationSeconds! - mediaDurationSeconds).toFixed(3))
+        audioTrackTimingOffsetSeconds(mediaDurationSeconds, stream.durationSeconds)
       ])
   )
 }

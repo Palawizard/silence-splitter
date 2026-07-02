@@ -30,6 +30,7 @@ export type TimelineExportAudioSource = {
   fileId: string
   channels: number
   sampleRate: number
+  sourceFrameOffset: number
 }
 
 export type TimelineExportAudioTrack = {

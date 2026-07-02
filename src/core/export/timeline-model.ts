@@ -1,6 +1,7 @@
 import { basename, parse } from 'node:path'
 import type { KeepSegment } from '../models/keep-segment'
 import type { MediaInfo } from '../models/media-info'
+import { audioTrackTimingOffsetSeconds } from '../audio/track-timing'
 import type {
   TimelineExportModel,
   TimelineExportSegment,
@@ -119,7 +120,13 @@ export function buildTimelineExportModel(
       fileName: basename(filePath),
       fileId: `audio-file-${index + 1}`,
       channels: stream.channels,
-      sampleRate: stream.sampleRate
+      sampleRate: stream.sampleRate,
+      // Analysis/preview shifts PCM timestamps by the duration-derived track offset.
+      // Sidecars remain codec-copy, so XML source bounds must apply the inverse shift.
+      sourceFrameOffset: secondsToFrame(
+        -audioTrackTimingOffsetSeconds(media.durationSeconds, stream.durationSeconds),
+        rate.framesPerSecond
+      )
     }
   })
 

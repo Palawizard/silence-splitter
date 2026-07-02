@@ -25,6 +25,7 @@ const media: MediaInfo = {
       codec: 'aac',
       channels: 2,
       sampleRate: 48000,
+      durationSeconds: 9.84,
       language: 'fra',
       title: 'Microphone'
     },
@@ -33,6 +34,7 @@ const media: MediaInfo = {
       codec: 'aac',
       channels: 1,
       sampleRate: 44100,
+      durationSeconds: 10.08,
       title: 'Jeu'
     }
   ]
@@ -104,7 +106,8 @@ assert.deepEqual(model.source.audioSources, [
     fileName: 'source-track-01.m4a',
     fileId: 'audio-file-1',
     channels: 2,
-    sampleRate: 48000
+    sampleRate: 48000,
+    sourceFrameOffset: 4
   },
   {
     sourceStreamOrder: 2,
@@ -113,7 +116,8 @@ assert.deepEqual(model.source.audioSources, [
     fileName: 'source-track-02.m4a',
     fileId: 'audio-file-2',
     channels: 1,
-    sampleRate: 44100
+    sampleRate: 44100,
+    sourceFrameOffset: -2
   }
 ])
 assert.deepEqual(model.source.audioTracks, [
@@ -206,11 +210,15 @@ assert.equal(xml.match(/<file id="audio-file-\d+"\/>/g)?.length, 4)
 assert.equal(xml.match(/<clipitem id="audio-track-\d+-clip-\d+">/g)?.length, 6)
 assert.match(
   xml,
-  /<clipitem id="audio-track-1-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<in>25<\/in>[\s\S]*?<out>63<\/out>[\s\S]*?<mediatype>audio<\/mediatype>[\s\S]*?<trackindex>1<\/trackindex>/
+  /<clipitem id="audio-track-1-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<in>29<\/in>[\s\S]*?<out>67<\/out>[\s\S]*?<mediatype>audio<\/mediatype>[\s\S]*?<trackindex>1<\/trackindex>/
 )
 assert.match(
   xml,
-  /<clipitem id="audio-track-2-clip-2">[\s\S]*?<start>38<\/start>[\s\S]*?<end>88<\/end>[\s\S]*?<in>125<\/in>[\s\S]*?<out>175<\/out>[\s\S]*?<mediatype>audio<\/mediatype>[\s\S]*?<trackindex>2<\/trackindex>/
+  /<clipitem id="audio-track-2-clip-2">[\s\S]*?<start>38<\/start>[\s\S]*?<end>88<\/end>[\s\S]*?<in>129<\/in>[\s\S]*?<out>179<\/out>[\s\S]*?<mediatype>audio<\/mediatype>[\s\S]*?<trackindex>2<\/trackindex>/
+)
+assert.match(
+  xml,
+  /<clipitem id="audio-track-3-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<in>23<\/in>[\s\S]*?<out>61<\/out>/
 )
 assert.equal(xml.match(/<channelcount>2<\/channelcount>/g)?.length, 1)
 assert.equal(xml.match(/<channelcount>1<\/channelcount>/g)?.length, 1)

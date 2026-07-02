@@ -156,6 +156,8 @@ function audioClipXml(
   )
   const audioSource = model.source.audioSources[audioSourceIndex]
   const pan = audioTrack.sourceChannelIndex === 1 ? -1 : 1
+  const sourceInFrame = segment.sourceInFrame + audioSource.sourceFrameOffset
+  const sourceOutFrame = segment.sourceOutFrame + audioSource.sourceFrameOffset
 
   return [
     `${indentation}<clipitem id="audio-track-${audioTrack.timelineTrackIndex}-clip-${segment.index}">`,
@@ -164,8 +166,8 @@ function audioClipXml(
     ...rateXml(model.rate, `${indentation}  `),
     `${indentation}  <start>${segment.timelineInFrame}</start>`,
     `${indentation}  <end>${segment.timelineOutFrame}</end>`,
-    `${indentation}  <in>${segment.sourceInFrame}</in>`,
-    `${indentation}  <out>${segment.sourceOutFrame}</out>`,
+    `${indentation}  <in>${sourceInFrame}</in>`,
+    `${indentation}  <out>${sourceOutFrame}</out>`,
     ...(segmentIndex === 0 && audioTrack.sourceChannelIndex === 1
       ? audioSourceFileXml(model, audioSourceIndex, `${indentation}  `)
       : [`${indentation}  <file id="${audioTrack.fileId}"/>`]),
