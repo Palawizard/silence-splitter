@@ -9,6 +9,7 @@ import {
   type DetectionParams
 } from '@core/presets'
 import { defaultAnalysisTrackIndices } from '@core/media/default-analysis-tracks'
+import { useSettings } from './context/SettingsProvider'
 import TimelinePreview from './components/TimelinePreview'
 import {
   audioTrackLabel,
@@ -37,6 +38,7 @@ const PARAM_FIELDS: {
 ]
 
 export default function App() {
+  const { settings } = useSettings()
   const [ffmpegOk, setFfmpegOk] = useState(true)
   const [media, setMedia] = useState<MediaInfo | null>(null)
   const [selectedTracks, setSelectedTracks] = useState<number[]>([])
@@ -48,9 +50,13 @@ export default function App() {
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [exportState, setExportState] = useState<ExportState>('idle')
-  const [exportNle, setExportNle] = useState<TimelineExportNle>('resolve')
-  const [resolveExportFormat, setResolveExportFormat] = useState<ResolveTimelineFormat>('otio')
-  const [premiereExportFormat, setPremiereExportFormat] = useState<PremiereTimelineFormat>('otio')
+  const [exportNle, setExportNle] = useState<TimelineExportNle>(settings.exportNle)
+  const [resolveExportFormat, setResolveExportFormat] = useState<ResolveTimelineFormat>(
+    settings.resolveExportFormat
+  )
+  const [premiereExportFormat, setPremiereExportFormat] = useState<PremiereTimelineFormat>(
+    settings.premiereExportFormat
+  )
   const [exportedPath, setExportedPath] = useState<string | null>(null)
   const [exportedAudioDirectory, setExportedAudioDirectory] = useState<string | null>(null)
 

@@ -22,3 +22,11 @@ input,
 select {
   font: inherit;
 }
+
+.app-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: #52525b;
+}
