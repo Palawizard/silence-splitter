@@ -39,7 +39,7 @@ const PARAM_FIELDS: {
 ]
 
 export default function App() {
-  const { settings } = useSettings()
+  const { settings, updateSettings } = useSettings()
   const [ffmpegOk, setFfmpegOk] = useState(true)
   const [media, setMedia] = useState<MediaInfo | null>(null)
   const [selectedTracks, setSelectedTracks] = useState<number[]>([])
@@ -60,6 +60,12 @@ export default function App() {
   )
   const [exportedPath, setExportedPath] = useState<string | null>(null)
   const [exportedAudioDirectory, setExportedAudioDirectory] = useState<string | null>(null)
+
+  useEffect(() => {
+    setExportNle(settings.exportNle)
+    setResolveExportFormat(settings.resolveExportFormat)
+    setPremiereExportFormat(settings.premiereExportFormat)
+  }, [settings.exportNle, settings.resolveExportFormat, settings.premiereExportFormat])
 
   useEffect(() => {
     window.api.checkFfmpeg().then((status) => {
@@ -431,9 +437,11 @@ export default function App() {
                     id="export-nle"
                     className="select"
                     value={exportNle}
-                    onChange={(event) =>
-                      setExportNle(event.target.value as TimelineExportNle)
-                    }
+                    onChange={(event) => {
+                      const next = event.target.value as TimelineExportNle
+                      setExportNle(next)
+                      void updateSettings({ exportNle: next })
+                    }}
                     disabled={exportState === 'exporting'}
                   >
                     <option value="resolve">DaVinci Resolve</option>
@@ -447,9 +455,11 @@ export default function App() {
                       id="resolve-format"
                       className="select"
                       value={resolveExportFormat}
-                      onChange={(event) =>
-                        setResolveExportFormat(event.target.value as ResolveTimelineFormat)
-                      }
+                      onChange={(event) => {
+                        const next = event.target.value as ResolveTimelineFormat
+                        setResolveExportFormat(next)
+                        void updateSettings({ resolveExportFormat: next })
+                      }}
                       disabled={exportState === 'exporting'}
                     >
                       <option value="otio">OTIO — recommandé, import rapide</option>
@@ -464,9 +474,11 @@ export default function App() {
                       id="premiere-format"
                       className="select"
                       value={premiereExportFormat}
-                      onChange={(event) =>
-                        setPremiereExportFormat(event.target.value as PremiereTimelineFormat)
-                      }
+                      onChange={(event) => {
+                        const next = event.target.value as PremiereTimelineFormat
+                        setPremiereExportFormat(next)
+                        void updateSettings({ premiereExportFormat: next })
+                      }}
                       disabled={exportState === 'exporting'}
                     >
                       <option value="otio">OTIO — recommandé, pistes stéréo natives</option>
