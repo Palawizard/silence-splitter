@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { buildTimelineExportModel } from '../src/core/export'
 import { generatePremiereXml } from '../src/core/export/premiere'
+import { premiereFilePathToUrl } from '../src/core/export/resolve'
 import { generateResolveXml } from '../src/core/export/resolve'
 import type { MediaInfo } from '../src/core/models/media-info'
 import { writePremiereXml } from '../src/main/export/premiere-xml'
@@ -91,6 +92,21 @@ assert.equal(premiereXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0,
 assert.equal(resolveXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 4)
 assert.match(premiereXml, /<numOutputChannels>2<\/numOutputChannels>/)
 assert.equal(premiereXml.match(/<linkclipref>video-clip-1<\/linkclipref>/g)?.length, 4)
+assert.equal(
+  premiereFilePathToUrl('F:\\Fast Documents\\Chameleon\\clip.mp4'),
+  'file://localhost/F:/Fast%20Documents/Chameleon/clip.mp4'
+)
+assert.equal(
+  premiereFilePathToUrl(
+    'E:\\Autre\\Downloads\\Chameleon-premiere-audio\\Chameleon-premiere-track-01.m4a'
+  ),
+  'file://localhost/E:/Autre/Downloads/Chameleon-premiere-audio/Chameleon-premiere-track-01.m4a'
+)
+assert.match(
+  premiereXml,
+  /<pathurl>file:\/\/localhost\/C:\/Media%20Files\/source\.mp4<\/pathurl>/
+)
+assert.doesNotMatch(premiereXml, /<pathurl>file:\/\/\/[A-Za-z]:\//)
 
 async function testFileWriting(): Promise<void> {
   const fixtureMedia = await probeMedia(resolve('test/fixtures/multi-track.mp4'))

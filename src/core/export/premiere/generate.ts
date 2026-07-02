@@ -1,4 +1,5 @@
 import type { TimelineExportModel } from '../types'
+import { premiereFilePathToUrl } from '../resolve/path-url'
 import {
   audioSourceFileXml,
   escapeXml,
@@ -32,7 +33,7 @@ function audioClipXml(
     `${indentation}  <in>${sourceInFrame}</in>`,
     `${indentation}  <out>${sourceOutFrame}</out>`,
     ...(segmentIndex === 0 && audioTrack.sourceChannelIndex === 1
-      ? audioSourceFileXml(model, audioSourceIndex, `${indentation}  `)
+      ? audioSourceFileXml(model, audioSourceIndex, `${indentation}  `, premiereFilePathToUrl)
       : [`${indentation}  <file id="${audioTrack.fileId}"/>`]),
     `${indentation}  <sourcetrack>`,
     `${indentation}    <mediatype>audio</mediatype>`,
@@ -122,7 +123,7 @@ export function generatePremiereXml(model: TimelineExportModel): string {
   ]
 
   model.segments.forEach((_segment, index) => {
-    lines.push(...videoClipXml(model, index, '          '))
+    lines.push(...videoClipXml(model, index, '          ', premiereFilePathToUrl))
   })
 
   lines.push('        </track>', '      </video>')

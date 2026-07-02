@@ -1,5 +1,5 @@
 import type { TimelineExportModel, TimelineRate } from '../types'
-import { filePathToUrl } from '../resolve/path-url'
+import { filePathToUrl, type MediaPathToUrl } from '../resolve/path-url'
 
 export function escapeXml(value: string): string {
   return value
@@ -19,14 +19,18 @@ export function rateXml(rate: TimelineRate, indentation: string): string[] {
   ]
 }
 
-export function sourceFileXml(model: TimelineExportModel, indentation: string): string[] {
+export function sourceFileXml(
+  model: TimelineExportModel,
+  indentation: string,
+  pathToUrl: MediaPathToUrl = filePathToUrl
+): string[] {
   const { source, rate } = model
   const lines = [
     `${indentation}<file id="source-file-1">`,
     `${indentation}  <name>${escapeXml(source.fileName)}</name>`,
     ...rateXml(rate, `${indentation}  `),
     `${indentation}  <duration>${source.durationFrames}</duration>`,
-    `${indentation}  <pathurl>${escapeXml(filePathToUrl(source.filePath))}</pathurl>`,
+    `${indentation}  <pathurl>${escapeXml(pathToUrl(source.filePath))}</pathurl>`,
     `${indentation}  <timecode>`,
     ...rateXml(rate, `${indentation}    `),
     `${indentation}    <string>00:00:00:00</string>`,
@@ -54,7 +58,8 @@ export function sourceFileXml(model: TimelineExportModel, indentation: string): 
 export function audioSourceFileXml(
   model: TimelineExportModel,
   audioSourceIndex: number,
-  indentation: string
+  indentation: string,
+  pathToUrl: MediaPathToUrl = filePathToUrl
 ): string[] {
   const source = model.source.audioSources[audioSourceIndex]
   return [
@@ -62,7 +67,7 @@ export function audioSourceFileXml(
     `${indentation}  <name>${escapeXml(source.fileName)}</name>`,
     ...rateXml(model.rate, `${indentation}  `),
     `${indentation}  <duration>${model.source.durationFrames}</duration>`,
-    `${indentation}  <pathurl>${escapeXml(filePathToUrl(source.filePath))}</pathurl>`,
+    `${indentation}  <pathurl>${escapeXml(pathToUrl(source.filePath))}</pathurl>`,
     `${indentation}  <media>`,
     `${indentation}    <audio>`,
     `${indentation}      <samplecharacteristics>`,
@@ -109,7 +114,8 @@ export function linksXml(
 export function videoClipXml(
   model: TimelineExportModel,
   segmentIndex: number,
-  indentation: string
+  indentation: string,
+  pathToUrl: MediaPathToUrl = filePathToUrl
 ): string[] {
   const segment = model.segments[segmentIndex]
   const lines = [
@@ -125,7 +131,7 @@ export function videoClipXml(
   ]
 
   if (segmentIndex === 0) {
-    lines.push(...sourceFileXml(model, `${indentation}  `))
+    lines.push(...sourceFileXml(model, `${indentation}  `, pathToUrl))
   } else {
     lines.push(`${indentation}  <file id="source-file-1"/>`)
   }
