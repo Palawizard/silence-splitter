@@ -8,6 +8,7 @@ import {
   type ReactNode
 } from 'react'
 import type { AppSettings } from '@core/settings'
+import { DEFAULT_APP_SETTINGS } from '@core/settings'
 
 type SettingsContextValue = {
   settings: AppSettings
@@ -22,11 +23,17 @@ type SettingsProviderProps = {
 }
 
 export function SettingsProvider({ children }: SettingsProviderProps) {
-  const [settings, setSettings] = useState<AppSettings | null>(
-    () => window.api.getBootstrap().settings
-  )
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    try {
+      return window.api.getBootstrap().settings
+    } catch {
+      return DEFAULT_APP_SETTINGS
+    }
+  })
 
   useEffect(() => {
+    void window.api.getSettings().then(setSettings).catch(() => undefined)
+
     const unsubscribe = window.api.onSettingsChanged((next) => {
       setSettings(next)
     })
@@ -40,21 +47,14 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     return next
   }, [])
 
-  const value = useMemo<SettingsContextValue | null>(() => {
-    if (!settings) {
-      return null
-    }
-
-    return {
+  const value = useMemo<SettingsContextValue>(
+    () => ({
       settings,
       updateSettings,
       isReady: true
-    }
-  }, [settings, updateSettings])
-
-  if (!value) {
-    return null
-  }
+    }),
+    [settings, updateSettings]
+  )
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
 }

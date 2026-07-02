@@ -4,7 +4,7 @@ import type { MediaInfo } from '@core/models/media-info'
 import type { TimelinePreviewData } from '@core/models/timeline-preview'
 import type { WaveformEnvelope } from '@core/models/waveform-envelope'
 import type { DetectionParams } from '@core/presets'
-import type { AppSettings, ThemeMode } from '@core/settings'
+import { DEFAULT_APP_SETTINGS, type AppSettings, type ThemeMode } from '@core/settings'
 
 export type FfmpegStatus = {
   ffmpeg: boolean
@@ -87,7 +87,36 @@ function applyDocumentTheme(effectiveTheme: EffectiveTheme): void {
   document.documentElement.style.colorScheme = effectiveTheme
 }
 
-const bootstrap = ipcRenderer.sendSync('app:bootstrap-sync') as AppBootstrap
+function systemThemeFallback(): ThemeState {
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  return {
+    effectiveTheme: prefersDark ? 'dark' : 'light',
+    themeMode: 'system'
+  }
+}
+
+function readBootstrap(): AppBootstrap {
+  try {
+    const payload = ipcRenderer.sendSync('app:bootstrap-sync') as AppBootstrap | undefined
+    if (
+      payload?.settings &&
+      payload.theme &&
+      (payload.theme.effectiveTheme === 'light' || payload.theme.effectiveTheme === 'dark')
+    ) {
+      return payload
+    }
+  } catch {
+    // Sync handler may be unavailable during dev hot reload.
+  }
+
+  const theme = systemThemeFallback()
+  return {
+    settings: { ...DEFAULT_APP_SETTINGS },
+    theme
+  }
+}
+
+const bootstrap = readBootstrap()
 applyDocumentTheme(bootstrap.theme.effectiveTheme)
 
 ipcRenderer.on('theme:changed', (_event, state: ThemeState) => {
