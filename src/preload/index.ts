@@ -82,11 +82,6 @@ export type AppBootstrap = {
   theme: ThemeState
 }
 
-function applyDocumentTheme(effectiveTheme: EffectiveTheme): void {
-  document.documentElement.dataset.theme = effectiveTheme
-  document.documentElement.style.colorScheme = effectiveTheme
-}
-
 function systemThemeFallback(): ThemeState {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   return {
@@ -95,7 +90,13 @@ function systemThemeFallback(): ThemeState {
   }
 }
 
-function readBootstrap(): AppBootstrap {
+let bootstrapCache: AppBootstrap | null = null
+
+function loadBootstrap(): AppBootstrap {
+  if (bootstrapCache) {
+    return bootstrapCache
+  }
+
   try {
     const payload = ipcRenderer.sendSync('app:bootstrap-sync') as AppBootstrap | undefined
     if (
@@ -103,28 +104,32 @@ function readBootstrap(): AppBootstrap {
       payload.theme &&
       (payload.theme.effectiveTheme === 'light' || payload.theme.effectiveTheme === 'dark')
     ) {
+      bootstrapCache = payload
       return payload
     }
   } catch {
     // Sync handler may be unavailable during dev hot reload.
   }
 
-  const theme = systemThemeFallback()
-  return {
+  bootstrapCache = {
     settings: { ...DEFAULT_APP_SETTINGS },
-    theme
+    theme: systemThemeFallback()
   }
+  return bootstrapCache
 }
 
-const bootstrap = readBootstrap()
-applyDocumentTheme(bootstrap.theme.effectiveTheme)
+function applyDocumentTheme(effectiveTheme: EffectiveTheme): void {
+  const root = document.documentElement
+  if (!root) {
+    return
+  }
 
-ipcRenderer.on('theme:changed', (_event, state: ThemeState) => {
-  applyDocumentTheme(state.effectiveTheme)
-})
+  root.dataset.theme = effectiveTheme
+  root.style.colorScheme = effectiveTheme
+}
 
 const api = {
-  getBootstrap: (): AppBootstrap => bootstrap,
+  getBootstrap: (): AppBootstrap => loadBootstrap(),
   checkFfmpeg: (): Promise<FfmpegStatus> => ipcRenderer.invoke('app:check-ffmpeg'),
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke('settings:get'),
   setSettings: (patch: Partial<AppSettings>): Promise<AppSettings> =>
@@ -165,3 +170,7 @@ const api = {
 export type AppApi = typeof api
 
 contextBridge.exposeInMainWorld('api', api)
+
+ipcRenderer.on('theme:changed', (_event, state: ThemeState) => {
+  applyDocumentTheme(state.effectiveTheme)
+})

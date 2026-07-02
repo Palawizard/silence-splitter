@@ -5,7 +5,24 @@ import { SettingsProvider } from './context/SettingsProvider'
 import { ThemeProvider } from './context/ThemeProvider'
 import './styles/global.css'
 
-createRoot(document.getElementById('root')!).render(
+function applyBootstrapTheme(): void {
+  try {
+    const { effectiveTheme } = window.api.getBootstrap().theme
+    document.documentElement.dataset.theme = effectiveTheme
+    document.documentElement.style.colorScheme = effectiveTheme
+  } catch {
+    // index.html inline script already applied the OS theme.
+  }
+}
+
+applyBootstrapTheme()
+
+const rootElement = document.getElementById('root')
+if (!rootElement) {
+  throw new Error('Root element #root not found')
+}
+
+createRoot(rootElement).render(
   <StrictMode>
     <SettingsProvider>
       <ThemeProvider>
