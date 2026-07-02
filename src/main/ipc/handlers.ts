@@ -12,6 +12,10 @@ import { checkFfmpegAvailable } from '../ffmpeg/check'
 import { probeMedia } from '../ffmpeg/probe'
 import { extractWaveformEnvelope } from '../ffmpeg/waveform'
 import { writeResolveOtio, writeResolveXml } from '../export/resolve-xml'
+import { writePremiereXml } from '../export/premiere-xml'
+
+export type TimelineExportNle = 'resolve' | 'premiere'
+export type ResolveTimelineFormat = 'otio' | 'xml'
 
 export function registerIpcHandlers(): void {
   ipcMain.handle('app:check-ffmpeg', () => checkFfmpegAvailable())
@@ -123,26 +127,34 @@ export function registerIpcHandlers(): void {
   )
 
   ipcMain.handle(
-    'export:resolve-xml',
+    'export:timeline',
     async (
       _event,
-      payload: { media: MediaInfo; keepSegments: KeepSegment[]; format: 'otio' | 'xml' }
+      payload: {
+        media: MediaInfo
+        keepSegments: KeepSegment[]
+        nle: TimelineExportNle
+        resolveFormat?: ResolveTimelineFormat
+      }
     ) => {
       const window = BrowserWindow.getFocusedWindow()
       const sourceName = parse(payload.media.filePath).name
-      const isOtio = payload.format === 'otio'
+      const isResolve = payload.nle === 'resolve'
+      const isOtio = isResolve && payload.resolveFormat !== 'xml'
+      const extension = isOtio ? 'otio' : 'xml'
+      const nleSlug = isResolve ? 'resolve' : 'premiere'
       const options: SaveDialogOptions = {
-        title: 'Exporter pour DaVinci Resolve',
+        title: isResolve ? 'Exporter pour DaVinci Resolve' : 'Exporter pour Premiere Pro',
         buttonLabel: 'Enregistrer',
         defaultPath: join(
           parse(payload.media.filePath).dir,
-          `${sourceName}-resolve.${isOtio ? 'otio' : 'xml'}`
+          `${sourceName}-${nleSlug}.${extension}`
         ),
-        filters: [
-          isOtio
-            ? { name: 'Timeline Resolve OTIO', extensions: ['otio'] }
-            : { name: 'Timeline Resolve XML', extensions: ['xml'] }
-        ]
+        filters: isOtio
+          ? [{ name: 'Timeline Resolve OTIO', extensions: ['otio'] }]
+          : isResolve
+            ? [{ name: 'Timeline Resolve XML', extensions: ['xml'] }]
+            : [{ name: 'Timeline Premiere Pro XML', extensions: ['xml'] }]
       }
       const result = window
         ? await dialog.showSaveDialog(window, options)
@@ -150,6 +162,15 @@ export function registerIpcHandlers(): void {
 
       if (result.canceled || !result.filePath) {
         return { canceled: true }
+      }
+
+      if (payload.nle === 'premiere') {
+        const files = await writePremiereXml(result.filePath, payload.media, payload.keepSegments)
+        return {
+          canceled: false,
+          filePath: files.xmlPath,
+          audioDirectoryPath: files.audioDirectoryPath
+        }
       }
 
       if (isOtio) {

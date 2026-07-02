@@ -51,13 +51,17 @@ export type PlaybackChunkResponse = {
   ended: boolean
 }
 
-export type ResolveExportRequest = {
+export type TimelineExportNle = 'resolve' | 'premiere'
+export type ResolveTimelineFormat = 'otio' | 'xml'
+
+export type TimelineExportRequest = {
   media: MediaInfo
   keepSegments: KeepSegment[]
-  format: 'otio' | 'xml'
+  nle: TimelineExportNle
+  resolveFormat?: ResolveTimelineFormat
 }
 
-export type ResolveExportResponse = {
+export type TimelineExportResponse = {
   canceled: boolean
   filePath?: string
   audioDirectoryPath?: string
@@ -75,8 +79,8 @@ const api = {
     ipcRenderer.invoke('media:detect-silences', request),
   getPlaybackChunk: (request: PlaybackChunkRequest): Promise<PlaybackChunkResponse> =>
     ipcRenderer.invoke('media:playback-chunk', request),
-  exportResolveXml: (request: ResolveExportRequest): Promise<ResolveExportResponse> =>
-    ipcRenderer.invoke('export:resolve-xml', request)
+  exportTimeline: (request: TimelineExportRequest): Promise<TimelineExportResponse> =>
+    ipcRenderer.invoke('export:timeline', request)
 }
 
 export type AppApi = typeof api

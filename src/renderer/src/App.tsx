@@ -21,7 +21,8 @@ import './styles/app.css'
 
 type LoadState = 'idle' | 'probing' | 'waveform' | 'detecting' | 'ready' | 'error'
 type ExportState = 'idle' | 'exporting' | 'success'
-type ResolveExportFormat = 'otio' | 'xml'
+type TimelineExportNle = 'resolve' | 'premiere'
+type ResolveTimelineFormat = 'otio' | 'xml'
 
 const PARAM_FIELDS: {
   key: keyof DetectionParams
@@ -47,7 +48,8 @@ export default function App() {
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [exportState, setExportState] = useState<ExportState>('idle')
-  const [resolveExportFormat, setResolveExportFormat] = useState<ResolveExportFormat>('otio')
+  const [exportNle, setExportNle] = useState<TimelineExportNle>('resolve')
+  const [resolveExportFormat, setResolveExportFormat] = useState<ResolveTimelineFormat>('otio')
   const [exportedPath, setExportedPath] = useState<string | null>(null)
   const [exportedAudioDirectory, setExportedAudioDirectory] = useState<string | null>(null)
 
@@ -184,7 +186,7 @@ export default function App() {
     setParams((current) => ({ ...current, [key]: numeric }))
   }
 
-  async function handleExportResolve() {
+  async function handleExportTimeline() {
     if (!media || keepSegments.length === 0 || loadState !== 'ready') {
       return
     }
@@ -194,10 +196,11 @@ export default function App() {
     setExportedAudioDirectory(null)
     setErrorMessage(null)
     try {
-      const result = await window.api.exportResolveXml({
+      const result = await window.api.exportTimeline({
         media,
         keepSegments,
-        format: resolveExportFormat
+        nle: exportNle,
+        resolveFormat: exportNle === 'resolve' ? resolveExportFormat : undefined
       })
       if (result.canceled) {
         setExportState('idle')
@@ -212,6 +215,16 @@ export default function App() {
       setErrorMessage("Impossible d'exporter la timeline.")
     }
   }
+
+  const exportButtonLabel =
+    exportState === 'exporting'
+      ? 'Export en cours…'
+      : exportNle === 'resolve'
+        ? 'Exporter pour DaVinci Resolve'
+        : 'Exporter pour Premiere Pro'
+
+  const exportSuccessNleLabel =
+    exportNle === 'resolve' ? 'Timeline Resolve enregistrée' : 'Timeline Premiere enregistrée'
 
   const isLoading = loadState === 'probing' || loadState === 'detecting'
   const showVfrWarning = media?.video?.isVariableFrameRate === true
@@ -388,33 +401,48 @@ export default function App() {
                   audio ensemble. La vidéo source reste inchangée.
                 </p>
                 <div className="field">
-                  <label htmlFor="resolve-format">Format</label>
+                  <label htmlFor="export-nle">Logiciel de montage</label>
                   <select
-                    id="resolve-format"
+                    id="export-nle"
                     className="select"
-                    value={resolveExportFormat}
+                    value={exportNle}
                     onChange={(event) =>
-                      setResolveExportFormat(event.target.value as ResolveExportFormat)
+                      setExportNle(event.target.value as TimelineExportNle)
                     }
                     disabled={exportState === 'exporting'}
                   >
-                    <option value="otio">OTIO — recommandé, import rapide</option>
-                    <option value="xml">XML — compatibilité</option>
+                    <option value="resolve">DaVinci Resolve</option>
+                    <option value="premiere">Premiere Pro</option>
                   </select>
                 </div>
+                {exportNle === 'resolve' && (
+                  <div className="field">
+                    <label htmlFor="resolve-format">Format Resolve</label>
+                    <select
+                      id="resolve-format"
+                      className="select"
+                      value={resolveExportFormat}
+                      onChange={(event) =>
+                        setResolveExportFormat(event.target.value as ResolveTimelineFormat)
+                      }
+                      disabled={exportState === 'exporting'}
+                    >
+                      <option value="otio">OTIO — recommandé, import rapide</option>
+                      <option value="xml">XML — compatibilité</option>
+                    </select>
+                  </div>
+                )}
                 <button
                   type="button"
                   className="btn btn-primary"
-                  onClick={handleExportResolve}
+                  onClick={handleExportTimeline}
                   disabled={exportState === 'exporting'}
                 >
-                  {exportState === 'exporting'
-                    ? 'Export en cours…'
-                    : 'Exporter pour DaVinci Resolve'}
+                  {exportButtonLabel}
                 </button>
                 {exportState === 'success' && exportedPath && (
                   <p className="export-success" role="status">
-                    Timeline Resolve enregistrée : <span>{exportedPath}</span>
+                    {exportSuccessNleLabel} : <span>{exportedPath}</span>
                     {exportedAudioDirectory && (
                       <>
                         <br />
