@@ -15,6 +15,9 @@ import tempfile
 from urllib.parse import unquote, urlparse
 import xml.etree.ElementTree as ET
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 
 class Verification:
     def __init__(self) -> None:
