@@ -115,8 +115,12 @@ export function registerIpcHandlers(): void {
         return { canceled: true }
       }
 
-      const filePath = await writeResolveXml(result.filePath, payload.media, payload.keepSegments)
-      return { canceled: false, filePath }
+      const files = await writeResolveXml(result.filePath, payload.media, payload.keepSegments)
+      return {
+        canceled: false,
+        filePath: files.xmlPath,
+        audioDirectoryPath: files.audioDirectoryPath
+      }
     }
   )
 }

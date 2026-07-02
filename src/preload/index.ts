@@ -45,6 +45,7 @@ export type ResolveExportRequest = {
 export type ResolveExportResponse = {
   canceled: boolean
   filePath?: string
+  audioDirectoryPath?: string
 }
 
 const api = {
