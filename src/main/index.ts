@@ -8,9 +8,15 @@ import {
   syncThemeToWindows,
   windowBackgroundColor
 } from './theme'
+import { checkForUpdatesOnStartup, registerUpdater } from './updater'
+
+app.setAppUserModelId('com.palawizard.silence-splitter')
 
 function createWindow(): void {
   const effectiveTheme = resolveEffectiveTheme()
+  const iconPath = app.isPackaged
+    ? join(process.resourcesPath, 'icon.png')
+    : join(__dirname, '../../build/icon.png')
   const mainWindow = new BrowserWindow({
     width: 960,
     height: 720,
@@ -19,6 +25,7 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     backgroundColor: windowBackgroundColor(effectiveTheme),
+    icon: iconPath,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -47,8 +54,10 @@ app.whenReady().then(() => {
   initSettings()
   registerIpcHandlers()
   registerThemeHandlers()
+  registerUpdater()
   syncThemeToWindows()
   createWindow()
+  checkForUpdatesOnStartup()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

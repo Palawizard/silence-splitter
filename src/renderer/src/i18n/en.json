@@ -28,6 +28,14 @@
   "ffmpeg": {
     "missing": "ffmpeg and ffprobe are required. Install them and restart the app."
   },
+  "update": {
+    "checking": "Checking for an update…",
+    "available": "Version {version} is available.",
+    "downloading": "Downloading update: {percent}%",
+    "downloaded": "Version {version} is ready.",
+    "download": "Download",
+    "restart": "Restart and install"
+  },
   "source": {
     "title": "Source video",
     "chooseFile": "Choose an MP4 file",

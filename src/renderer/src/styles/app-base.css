@@ -72,6 +72,13 @@
   border: 1px solid var(--color-banner-error-border);
 }
 
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .card {
   padding: 1.35rem;
   margin-bottom: 1.1rem;

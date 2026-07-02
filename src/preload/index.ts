@@ -82,6 +82,15 @@ export type AppBootstrap = {
   theme: ThemeState
 }
 
+export type UpdateStatus =
+  | { state: 'idle' }
+  | { state: 'checking' }
+  | { state: 'available'; version: string }
+  | { state: 'not-available' }
+  | { state: 'downloading'; percent: number; version: string }
+  | { state: 'downloaded'; version: string }
+  | { state: 'error'; message: string }
+
 function systemThemeFallback(): ThemeState {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   return {
@@ -164,7 +173,16 @@ const api = {
   getPlaybackChunk: (request: PlaybackChunkRequest): Promise<PlaybackChunkResponse> =>
     ipcRenderer.invoke('media:playback-chunk', request),
   exportTimeline: (request: TimelineExportRequest): Promise<TimelineExportResponse> =>
-    ipcRenderer.invoke('export:timeline', request)
+    ipcRenderer.invoke('export:timeline', request),
+  getUpdateStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke('update:get-status'),
+  checkForUpdates: (): Promise<UpdateStatus> => ipcRenderer.invoke('update:check'),
+  downloadUpdate: (): Promise<void> => ipcRenderer.invoke('update:download'),
+  installUpdate: (): void => ipcRenderer.send('update:install'),
+  onUpdateStatus: (callback: (status: UpdateStatus) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, status: UpdateStatus) => callback(status)
+    ipcRenderer.on('update:status', listener)
+    return () => ipcRenderer.removeListener('update:status', listener)
+  }
 }
 
 export type AppApi = typeof api

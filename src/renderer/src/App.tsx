@@ -27,6 +27,7 @@ import ExportPanel, {
 } from './components/ExportPanel'
 import TimelinePreview from './components/TimelinePreview'
 import WelcomeModal from './components/WelcomeModal'
+import UpdateBanner from './components/UpdateBanner'
 import {
   audioTrackLabel,
   formatDuration,
@@ -280,6 +281,8 @@ export default function App() {
       </header>
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+
+      <UpdateBanner />
 
       {!ffmpegOk && (
         <div className="banner" role="alert">
