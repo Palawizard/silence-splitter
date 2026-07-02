@@ -34,6 +34,7 @@ const TARGET_VISIBLE_SECONDS = 15
 const WAVE_AMPLITUDE = 0.92
 const PLAYHEAD_LEFT_MARGIN_RATIO = 0.06
 const PLAYHEAD_RIGHT_EDGE_RATIO = 0.94
+const PLAYBACK_LABEL_INTERVAL_MS = 100
 
 function formatTimeLabel(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) {
@@ -199,6 +200,7 @@ export default function TimelinePreview({
 
   const viewportRef = useRef<HTMLDivElement>(null)
   const waveformCanvasRef = useRef<HTMLCanvasElement>(null)
+  const playheadRef = useRef<HTMLDivElement>(null)
   const scrollRafRef = useRef<number | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const activeSourcesRef = useRef(new Set<AudioBufferSourceNode>())
@@ -218,6 +220,10 @@ export default function TimelinePreview({
   const waveformRequestRef = useRef(0)
   const hiresWaveformTimerRef = useRef<number | null>(null)
   const lastWaveformWindowRef = useRef({ start: -1, end: -1 })
+  const pixelsPerSecondRef = useRef(0)
+  const keepSegmentsRef = useRef(keepSegments)
+  const cutDurationRef = useRef(cutDuration)
+  const lastPlaybackLabelUpdateRef = useRef(0)
 
   const [viewportWidth, setViewportWidth] = useState(0)
   const [scrollLeft, setScrollLeft] = useState(0)
@@ -232,9 +238,6 @@ export default function TimelinePreview({
   const ticks = buildTimeTicks(durationSeconds, pixelsPerSecond)
   const maxHalfHeight = (WAVE_LANE_HEIGHT / 2) * WAVE_AMPLITUDE
   const maxScroll = Math.max(0, canvasWidth - viewportWidth)
-  const sourcePlayheadSeconds = timelineTimeToSourceTime(keepSegments, playbackPositionSeconds)
-  const playheadX = toX(sourcePlayheadSeconds, pixelsPerSecond)
-  const showPlayhead = cutDuration > 0 && (isPlaying || playbackPositionSeconds > 0)
 
   const viewStartSeconds = scrollLeft / pixelsPerSecond
   const viewEndSeconds = Math.min(
@@ -248,16 +251,62 @@ export default function TimelinePreview({
     }
   }, [])
 
+  const updatePlayheadVisual = useCallback((timelinePositionSeconds: number) => {
+    const playhead = playheadRef.current
+    if (!playhead || pixelsPerSecondRef.current <= 0) {
+      return
+    }
+
+    const visible =
+      cutDurationRef.current > 0 &&
+      (timelinePositionSeconds > 0 || isPlayingRef.current)
+    playhead.style.visibility = visible ? 'visible' : 'hidden'
+    if (!visible) {
+      return
+    }
+
+    const sourceSeconds = timelineTimeToSourceTime(
+      keepSegmentsRef.current,
+      timelinePositionSeconds
+    )
+    playhead.style.transform = `translate3d(${sourceSeconds * pixelsPerSecondRef.current}px, 0, 0)`
+  }, [])
+
+  const syncPlaybackDisplay = useCallback(
+    (timelinePositionSeconds: number, forceLabel = false) => {
+      updatePlayheadVisual(timelinePositionSeconds)
+      const now = performance.now()
+      if (
+        forceLabel ||
+        now - lastPlaybackLabelUpdateRef.current >= PLAYBACK_LABEL_INTERVAL_MS
+      ) {
+        lastPlaybackLabelUpdateRef.current = now
+        setPlaybackPositionSeconds(timelinePositionSeconds)
+      }
+    },
+    [updatePlayheadVisual]
+  )
+
+  pixelsPerSecondRef.current = pixelsPerSecond
+  keepSegmentsRef.current = keepSegments
+  cutDurationRef.current = cutDuration
+
+  useEffect(() => {
+    updatePlayheadVisual(positionRef.current)
+  }, [pixelsPerSecond, keepSegments, cutDuration, updatePlayheadVisual])
+
   useEffect(() => {
     setScrollLeft(0)
     setWindowPeaks([])
     setPlaybackPositionSeconds(0)
     positionRef.current = 0
+    lastPlaybackLabelUpdateRef.current = 0
     userScrolledRef.current = false
     if (viewportRef.current) {
       viewportRef.current.scrollLeft = 0
     }
-  }, [data, durationSeconds, keepSegments, filePath, audioStreamIndices])
+    updatePlayheadVisual(0)
+  }, [data, durationSeconds, keepSegments, filePath, audioStreamIndices, updatePlayheadVisual])
 
   useEffect(() => {
     updateViewportWidth()
@@ -473,8 +522,8 @@ export default function TimelinePreview({
     isPlayingRef.current = false
     setIsPlaying(false)
     positionRef.current = cutDuration
-    setPlaybackPositionSeconds(cutDuration)
-  }, [cutDuration])
+    syncPlaybackDisplay(cutDuration, true)
+  }, [cutDuration, syncPlaybackDisplay])
 
   const fillQueueRef = useRef<(generation: number) => Promise<void>>(async () => undefined)
 
@@ -581,7 +630,7 @@ export default function TimelinePreview({
       setIsPlaying(false)
       setPlaybackError(null)
       positionRef.current = startPosition
-      setPlaybackPositionSeconds(startPosition)
+      syncPlaybackDisplay(startPosition, true)
       nextTimelineTimeRef.current = startPosition
       nextScheduleTimeRef.current = context.currentTime + 0.05
       anchorTimelineTimeRef.current = startPosition
@@ -589,7 +638,7 @@ export default function TimelinePreview({
       scrollToSourceTime(timelineTimeToSourceTime(keepSegments, startPosition), 'reveal')
       void fillQueueRef.current(generation)
     },
-    [cutDuration, keepSegments, scrollToSourceTime, stopScheduledAudio]
+    [cutDuration, keepSegments, scrollToSourceTime, stopScheduledAudio, syncPlaybackDisplay]
   )
 
   const pausePlayback = useCallback(() => {
@@ -599,8 +648,8 @@ export default function TimelinePreview({
     setIsPlaying(false)
     setIsPlaybackPreparing(false)
     positionRef.current = currentPosition
-    setPlaybackPositionSeconds(currentPosition)
-  }, [readCurrentPosition, stopScheduledAudio])
+    syncPlaybackDisplay(currentPosition, true)
+  }, [readCurrentPosition, stopScheduledAudio, syncPlaybackDisplay])
 
   const stopPlayback = useCallback(() => {
     stopScheduledAudio()
@@ -609,9 +658,11 @@ export default function TimelinePreview({
     setIsPlaybackPreparing(false)
     positionRef.current = 0
     setPlaybackPositionSeconds(0)
+    lastPlaybackLabelUpdateRef.current = 0
+    updatePlayheadVisual(0)
     userScrolledRef.current = false
     scrollToSourceTime(0, 'start')
-  }, [scrollToSourceTime, stopScheduledAudio])
+  }, [scrollToSourceTime, stopScheduledAudio, updatePlayheadVisual])
 
   const seekToTimelinePosition = useCallback(
     (nextPosition: number) => {
@@ -623,10 +674,10 @@ export default function TimelinePreview({
       }
 
       positionRef.current = clamped
-      setPlaybackPositionSeconds(clamped)
+      syncPlaybackDisplay(clamped, true)
       scrollToSourceTime(timelineTimeToSourceTime(keepSegments, clamped), 'reveal')
     },
-    [cutDuration, keepSegments, scrollToSourceTime, startPlayback]
+    [cutDuration, keepSegments, scrollToSourceTime, startPlayback, syncPlaybackDisplay]
   )
 
   useEffect(() => {
@@ -637,7 +688,7 @@ export default function TimelinePreview({
     const updatePosition = () => {
       const currentPosition = readCurrentPosition()
       positionRef.current = currentPosition
-      setPlaybackPositionSeconds(currentPosition)
+      syncPlaybackDisplay(currentPosition)
 
       if (!userScrolledRef.current) {
         scrollToSourceTime(
@@ -655,7 +706,7 @@ export default function TimelinePreview({
         animationFrameRef.current = null
       }
     }
-  }, [isPlaying, keepSegments, readCurrentPosition, scrollToSourceTime])
+  }, [isPlaying, keepSegments, readCurrentPosition, scrollToSourceTime, syncPlaybackDisplay])
 
   useEffect(() => {
     stopScheduledAudio()
@@ -664,8 +715,10 @@ export default function TimelinePreview({
     setIsPlaybackPreparing(false)
     positionRef.current = 0
     setPlaybackPositionSeconds(0)
+    lastPlaybackLabelUpdateRef.current = 0
+    updatePlayheadVisual(0)
     setPlaybackError(null)
-  }, [filePath, audioStreamIndices, keepSegments, stopScheduledAudio])
+  }, [filePath, audioStreamIndices, keepSegments, stopScheduledAudio, updatePlayheadVisual])
 
   useEffect(
     () => () => {
@@ -872,13 +925,7 @@ export default function TimelinePreview({
               />
             )}
 
-            {showPlayhead && (
-              <div
-                className="timeline-playhead"
-                style={{ left: playheadX }}
-                aria-hidden="true"
-              />
-            )}
+            <div ref={playheadRef} className="timeline-playhead" aria-hidden="true" />
           </div>
         </div>
 
