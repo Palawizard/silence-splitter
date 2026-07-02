@@ -77,7 +77,25 @@ export type ThemeState = {
   themeMode: ThemeMode
 }
 
+export type AppBootstrap = {
+  settings: AppSettings
+  theme: ThemeState
+}
+
+function applyDocumentTheme(effectiveTheme: EffectiveTheme): void {
+  document.documentElement.dataset.theme = effectiveTheme
+  document.documentElement.style.colorScheme = effectiveTheme
+}
+
+const bootstrap = ipcRenderer.sendSync('app:bootstrap-sync') as AppBootstrap
+applyDocumentTheme(bootstrap.theme.effectiveTheme)
+
+ipcRenderer.on('theme:changed', (_event, state: ThemeState) => {
+  applyDocumentTheme(state.effectiveTheme)
+})
+
 const api = {
+  getBootstrap: (): AppBootstrap => bootstrap,
   checkFfmpeg: (): Promise<FfmpegStatus> => ipcRenderer.invoke('app:check-ffmpeg'),
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke('settings:get'),
   setSettings: (patch: Partial<AppSettings>): Promise<AppSettings> =>

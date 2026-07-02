@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Silence Splitter</title>
+    <script>
+      ;(function () {
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        var theme = prefersDark ? 'dark' : 'light'
+        var root = document.documentElement
+        root.dataset.theme = theme
+        root.style.colorScheme = theme
+        root.style.backgroundColor = prefersDark ? '#18181b' : '#f4f4f5'
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

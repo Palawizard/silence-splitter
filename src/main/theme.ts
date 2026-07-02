@@ -32,7 +32,7 @@ export function windowBackgroundColor(theme: EffectiveTheme): string {
   return theme === 'dark' ? '#18181b' : '#f4f4f5'
 }
 
-function buildThemeState(): ThemeState {
+export function buildThemeState(): ThemeState {
   const settings = getCachedSettings()
   return {
     effectiveTheme: resolveEffectiveTheme(settings.theme),

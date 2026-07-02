@@ -22,32 +22,16 @@ type SettingsProviderProps = {
 }
 
 export function SettingsProvider({ children }: SettingsProviderProps) {
-  const [settings, setSettings] = useState<AppSettings | null>(null)
+  const [settings, setSettings] = useState<AppSettings | null>(
+    () => window.api.getBootstrap().settings
+  )
 
   useEffect(() => {
-    let active = true
-
-    window.api
-      .getSettings()
-      .then((loaded) => {
-        if (active) {
-          setSettings(loaded)
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setSettings(null)
-        }
-      })
-
     const unsubscribe = window.api.onSettingsChanged((next) => {
       setSettings(next)
     })
 
-    return () => {
-      active = false
-      unsubscribe()
-    }
+    return unsubscribe
   }, [])
 
   const updateSettings = useCallback(async (patch: Partial<AppSettings>) => {
@@ -69,11 +53,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
   }, [settings, updateSettings])
 
   if (!value) {
-    return (
-      <div className="app-loading">
-        <p>Chargement…</p>
-      </div>
-    )
+    return null
   }
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>

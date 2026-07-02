@@ -13,6 +13,7 @@ import { probeMedia } from '../ffmpeg/probe'
 import { extractWaveformEnvelope } from '../ffmpeg/waveform'
 import { writeResolveOtio, writeResolveXml } from '../export/resolve-xml'
 import { writePremiereOtio, writePremiereXml } from '../export/premiere-xml'
+import { registerBootstrapHandlers } from './bootstrap-handlers'
 import { registerSettingsHandlers } from './settings-handlers'
 
 export type TimelineExportNle = 'resolve' | 'premiere'
@@ -20,6 +21,7 @@ export type ResolveTimelineFormat = 'otio' | 'xml'
 export type PremiereTimelineFormat = 'otio' | 'xml'
 
 export function registerIpcHandlers(): void {
+  registerBootstrapHandlers()
   registerSettingsHandlers()
 
   ipcMain.handle('app:check-ffmpeg', () => checkFfmpegAvailable())
