@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 from urllib.parse import unquote, urlparse
 import xml.etree.ElementTree as ET
 
@@ -164,6 +165,25 @@ def validate_xml(xml_path: Path, verification: Verification) -> dict[str, object
             indices == {channel_index},
             f"XML audio track {track_index} maps sidecar channel {channel_index}",
         )
+        expected_output = channel_index if channels_per_stream[stream_order - 1] == 2 else None
+        actual_output = track.findtext("outputchannelindex")
+        verification.check(
+            actual_output == (str(expected_output) if expected_output is not None else None),
+            f"XML audio track {track_index} has correct stereo output routing",
+        )
+        expected_pan = -1 if channel_index == 1 else 1
+        pan_values = {
+            float(parameter.findtext("value", "0"))
+            for item in items
+            for effect in item.findall("filter/effect")
+            if effect.findtext("effectid") == "audiopan"
+            for parameter in effect.findall("parameter")
+            if parameter.findtext("parameterid") == "pan"
+        }
+        verification.check(
+            pan_values == ({expected_pan} if expected_output is not None else set()),
+            f"XML audio track {track_index} pans its stereo channel correctly",
+        )
         source_track_indices.extend(indices)
 
         first_file = track.find("clipitem/file")
@@ -217,6 +237,10 @@ def validate_xml(xml_path: Path, verification: Verification) -> dict[str, object
         "expected_audio_tracks": expected_audio_tracks,
         "expected_audio_subtypes": [
             "mono" for _stream, _channel in expected_track_sources
+        ],
+        "expected_output_indices": [
+            channel if channels_per_stream[stream - 1] == 2 else None
+            for stream, channel in expected_track_sources
         ],
         "frame_rate": frame_rate,
     }
@@ -343,6 +367,39 @@ def validate_resolve(expected: dict[str, object], verification: Verification) ->
             media_paths == {expected["audio_paths"][track_index - 1]},
             f"Resolve audio track {track_index} references the expected sidecar",
         )
+
+    roundtrip_path: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".xml", delete=False) as temporary_file:
+            roundtrip_path = temporary_file.name
+        exported = timeline.Export(roundtrip_path, resolve.EXPORT_FCP_7_XML)
+        roundtrip_root = ET.parse(roundtrip_path).getroot() if exported else None
+        roundtrip_tracks = as_list(roundtrip_root, "./sequence/media/audio/track")
+        roundtrip_routing: list[int | None] = []
+        for track in roundtrip_tracks:
+            output_index = track.findtext("outputchannelindex")
+            if output_index is not None:
+                roundtrip_routing.append(int(output_index))
+                continue
+            pan_value = None
+            first_item = track.find("clipitem")
+            if first_item is not None:
+                for filter_element in first_item.findall("filter"):
+                    effect = filter_element.find("effect")
+                    if effect is None or effect.findtext("effectid") != "audiopan":
+                        continue
+                    for parameter in effect.findall("parameter"):
+                        if parameter.findtext("parameterid") == "pan":
+                            pan = float(parameter.findtext("value", "0"))
+                            pan_value = 1 if pan < 0 else 2 if pan > 0 else None
+            roundtrip_routing.append(pan_value)
+        verification.check(
+            roundtrip_routing == expected["expected_output_indices"],
+            "Resolve preserves left/right routing for every stereo pair",
+        )
+    finally:
+        if roundtrip_path:
+            Path(roundtrip_path).unlink(missing_ok=True)
 
     actual_rate = float(project.GetSetting("timelineFrameRate"))
     verification.check(

@@ -154,6 +154,8 @@ function audioClipXml(
   const audioSourceIndex = model.source.audioSources.findIndex(
     (source) => source.sourceStreamIndex === audioTrack.sourceStreamIndex
   )
+  const audioSource = model.source.audioSources[audioSourceIndex]
+  const pan = audioTrack.sourceChannelIndex === 1 ? -1 : 1
 
   return [
     `${indentation}<clipitem id="audio-track-${audioTrack.timelineTrackIndex}-clip-${segment.index}">`,
@@ -171,6 +173,26 @@ function audioClipXml(
     `${indentation}    <mediatype>audio</mediatype>`,
     `${indentation}    <trackindex>${audioTrack.sourceTrackIndex}</trackindex>`,
     `${indentation}  </sourcetrack>`,
+    ...(audioSource.channels === 2
+      ? [
+          `${indentation}  <filter>`,
+          `${indentation}    <enabled>TRUE</enabled>`,
+          `${indentation}    <effect>`,
+          `${indentation}      <name>Audio Pan</name>`,
+          `${indentation}      <effectid>audiopan</effectid>`,
+          `${indentation}      <effecttype>audiopan</effecttype>`,
+          `${indentation}      <mediatype>audio</mediatype>`,
+          `${indentation}      <parameter>`,
+          `${indentation}        <name>Pan</name>`,
+          `${indentation}        <parameterid>pan</parameterid>`,
+          `${indentation}        <value>${pan}</value>`,
+          `${indentation}        <valuemin>-1</valuemin>`,
+          `${indentation}        <valuemax>1</valuemax>`,
+          `${indentation}      </parameter>`,
+          `${indentation}    </effect>`,
+          `${indentation}  </filter>`
+        ]
+      : []),
     ...linksXml(model, segment.index, `${indentation}  `),
     `${indentation}</clipitem>`
   ]
@@ -181,12 +203,35 @@ function audioTimelineXml(model: TimelineExportModel, indentation: string): stri
     return []
   }
 
-  const lines = [`${indentation}<audio>`]
-  model.source.audioTracks.forEach((_track, audioTrackIndex) => {
+  const lines = [
+    `${indentation}<audio>`,
+    `${indentation}  <outputs>`,
+    `${indentation}    <group>`,
+    `${indentation}      <index>1</index>`,
+    `${indentation}      <numchannels>2</numchannels>`,
+    `${indentation}      <downmix>0</downmix>`,
+    `${indentation}      <channel>`,
+    `${indentation}        <index>1</index>`,
+    `${indentation}      </channel>`,
+    `${indentation}      <channel>`,
+    `${indentation}        <index>2</index>`,
+    `${indentation}      </channel>`,
+    `${indentation}    </group>`,
+    `${indentation}  </outputs>`
+  ]
+  model.source.audioTracks.forEach((track, audioTrackIndex) => {
     lines.push(`${indentation}  <track>`)
     model.segments.forEach((_segment, segmentIndex) => {
       lines.push(...audioClipXml(model, segmentIndex, audioTrackIndex, `${indentation}    `))
     })
+    const source = model.source.audioSources.find(
+      (candidate) => candidate.sourceStreamIndex === track.sourceStreamIndex
+    )
+    if (source?.channels === 2) {
+      lines.push(
+        `${indentation}    <outputchannelindex>${track.sourceChannelIndex}</outputchannelindex>`
+      )
+    }
     lines.push(
       `${indentation}    <enabled>TRUE</enabled>`,
       `${indentation}    <locked>FALSE</locked>`,

@@ -215,6 +215,16 @@ assert.match(
 assert.equal(xml.match(/<channelcount>2<\/channelcount>/g)?.length, 1)
 assert.equal(xml.match(/<channelcount>1<\/channelcount>/g)?.length, 1)
 assert.equal(xml.match(/<linkclipref>video-clip-1<\/linkclipref>/g)?.length, 4)
+assert.deepEqual(
+  [...xml.matchAll(/<outputchannelindex>(\d)<\/outputchannelindex>/g)].map((match) => match[1]),
+  ['1', '2']
+)
+assert.deepEqual(
+  [...xml.matchAll(/<parameterid>pan<\/parameterid>\s*<value>(-?1)<\/value>/g)].map(
+    (match) => match[1]
+  ),
+  ['-1', '-1', '1', '1']
+)
 
 assert.equal(
   filePathToUrl('C:\\Media & Files\\café #1%.mp4'),
