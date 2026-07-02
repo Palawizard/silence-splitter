@@ -2,9 +2,9 @@
 
 Application locale qui analyse l'audio d'une vidéo MP4, détecte les silences et exporte une timeline importable dans un logiciel de montage. La vidéo source n'est jamais modifiée.
 
-L'aperçu permet de lire le montage détecté, de se déplacer dans sa timeline et d'écouter le mix des pistes sélectionnées sans rendre de nouveau fichier audio.
+L'aperçu timeline (style Timebolt) montre les zones conservées et coupées, la forme d'onde et un curseur de lecture. La lecture audio utilise un décodage 48 kHz des pistes sélectionnées, sans rendre de nouveau fichier.
 
-L'export Resolve permet de choisir une timeline OTIO rapide à importer ou un XML de compatibilité. L'export Premiere Pro génère un XML importable directement. Chaque export crée aussi un dossier de pistes audio annexes remuxées sans réencodage. Conservez la timeline choisie et ce dossier ensemble pour préserver tous les flux audio du MP4.
+L'export vers DaVinci Resolve ou Adobe Premiere Pro permet de choisir une timeline OTIO (recommandé) ou un XML de compatibilité. Chaque export crée aussi un dossier de pistes audio annexes remuxées sans réencodage. Conservez la timeline choisie et ce dossier ensemble pour préserver tous les flux audio du MP4.
 
 ## Stack
 
@@ -39,7 +39,7 @@ Avec Resolve ouvert sur la timeline importée, ajoutez `--resolve` pour contrôl
 
 ## Documentation agent
 
-Fichiers locaux (non versionnés) : `.cursor/docs/project.md`, `.cursor/plan.md`.
+Fichiers locaux (non versionnés) : `.cursor/docs/project.md`, `.cursor/docs/agents.md`, `.cursor/plan.md`.
 
 ## Fixtures de test
 

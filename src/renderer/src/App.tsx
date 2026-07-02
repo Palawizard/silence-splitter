@@ -22,6 +22,7 @@ import {
   formatFrameRate,
   formatResolution
 } from './utils/format'
+import { outlineIconProps } from './utils/icons'
 import './styles/app.css'
 
 type LoadState = 'idle' | 'probing' | 'waveform' | 'detecting' | 'ready' | 'error'
@@ -274,7 +275,7 @@ export default function App() {
           title={t('settings.title')}
           onClick={() => setShowSettings(true)}
         >
-          <Settings size={18} strokeWidth={2} aria-hidden />
+          <Settings size={20} {...outlineIconProps} aria-hidden />
         </button>
       </header>
 

@@ -1,6 +1,8 @@
 import type { AppLocale, ThemeMode } from '@core/settings'
+import { X } from 'lucide-react'
 import { useI18n } from '../context/I18nProvider'
 import { useSettings } from '../context/SettingsProvider'
+import { outlineIconProps } from '../utils/icons'
 
 type SettingsModalProps = {
   onClose: () => void
@@ -30,7 +32,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
         <div className="modal-header">
           <h2 id="settings-title">{t('settings.title')}</h2>
           <button type="button" className="btn modal-close" onClick={onClose} aria-label={t('settings.close')}>
-            ×
+            <X size={18} {...outlineIconProps} aria-hidden />
           </button>
         </div>
 

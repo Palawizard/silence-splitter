@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react'
-import { Loader2, Pause, Play, Square } from 'lucide-react'
+import { Loader2, ChevronLeft, ChevronRight, Pause, Play, Square } from 'lucide-react'
 import {
   cutTimelineDuration,
   PLAYBACK_SAMPLE_RATE,
@@ -10,6 +10,7 @@ import type { KeepSegment } from '@core/models/keep-segment'
 import type { TimelinePreviewData } from '@core/models/timeline-preview'
 import { useI18n } from '../context/I18nProvider'
 import { formatDuration } from '../utils/format'
+import { filledIconProps } from '../utils/icons'
 
 type TimelinePreviewProps = {
   data: TimelinePreviewData
@@ -976,9 +977,9 @@ export default function TimelinePreview({
               {isPlaybackPreparing ? (
                 <Loader2 size={18} className="timeline-transport-spinner" aria-hidden />
               ) : isPlaying ? (
-                <Pause size={18} aria-hidden />
+                <Pause size={18} {...filledIconProps} aria-hidden />
               ) : (
-                <Play size={18} aria-hidden />
+                <Play size={18} {...filledIconProps} aria-hidden />
               )}
             </button>
             <button
@@ -988,7 +989,7 @@ export default function TimelinePreview({
               disabled={!canPlay}
               aria-label={t('preview.transportStop')}
             >
-              <Square size={16} aria-hidden />
+              <Square size={14} {...filledIconProps} aria-hidden />
             </button>
           </div>
 
@@ -996,11 +997,11 @@ export default function TimelinePreview({
             <div className="timeline-nav">
               <button
                 type="button"
-                className="btn timeline-scroll-button"
+                className="btn timeline-scroll-button timeline-scroll-button--icon"
                 onClick={() => nudgeScroll(-viewportWidth * 0.5)}
                 aria-label={t('preview.scrollLeft')}
               >
-                ‹
+                <ChevronLeft size={18} {...filledIconProps} aria-hidden />
               </button>
               <input
                 id="timeline-position"
@@ -1015,11 +1016,11 @@ export default function TimelinePreview({
               />
               <button
                 type="button"
-                className="btn timeline-scroll-button"
+                className="btn timeline-scroll-button timeline-scroll-button--icon"
                 onClick={() => nudgeScroll(viewportWidth * 0.5)}
                 aria-label={t('preview.scrollRight')}
               >
-                ›
+                <ChevronRight size={18} {...filledIconProps} aria-hidden />
               </button>
             </div>
           )}
