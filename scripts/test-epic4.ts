@@ -79,35 +79,25 @@ assert.match(
   premiereXml,
   /<clipitem id="video-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<in>25<\/in>[\s\S]*?<out>63<\/out>/
 )
-assert.equal(premiereXml.match(/<clipitem id="audio-track-\d+-clip-\d+">/g)?.length, 6)
+assert.equal(premiereXml.match(/<clipitem id="audio-stream-\d+-clip-\d+">/g)?.length, 4)
+assert.equal(premiereXml.match(/<clipitem id="audio-track-\d+-clip-\d+">/g)?.length ?? 0, 0)
 assert.match(
   premiereXml,
-  /<clipitem id="audio-track-1-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<in>29<\/in>[\s\S]*?<out>67<\/out>/
+  /<clipitem id="audio-stream-1-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<in>29<\/in>[\s\S]*?<out>67<\/out>[\s\S]*?<channelcount>2<\/channelcount>/
 )
-assert.deepEqual(
-  [...premiereXml.matchAll(/<outputchannelindex>(\d)<\/outputchannelindex>/g)].map((match) => match[1]),
-  ['1', '2']
+assert.match(
+  premiereXml,
+  /<clipitem id="audio-stream-2-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<channelcount>1<\/channelcount>/
 )
-assert.equal(premiereXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 4)
+assert.equal(premiereXml.match(/<outputchannelindex>/g)?.length ?? 0, 0)
+assert.equal(premiereXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 0)
 assert.equal(resolveXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 4)
-assert.match(premiereXml, /<effectcategory>audiopan<\/effectcategory>/)
-assert.deepEqual(
-  [...premiereXml.matchAll(/<parameterid>pan<\/parameterid>\s*<value>(-?1)<\/value>/g)].map(
-    (match) => match[1]
-  ),
-  ['-1', '-1', '1', '1']
-)
 assert.match(premiereXml, /<numOutputChannels>2<\/numOutputChannels>/)
-assert.equal(premiereXml.match(/<linkclipref>video-clip-1<\/linkclipref>/g)?.length, 4)
+assert.equal(premiereXml.match(/<linkclipref>video-clip-1<\/linkclipref>/g)?.length, 3)
+assert.equal(premiereXml.match(/<linkclipref>audio-stream-1-clip-1<\/linkclipref>/g)?.length, 3)
 assert.equal(
   premiereFilePathToUrl('F:\\Fast Documents\\Chameleon\\clip.mp4'),
   'file://localhost/F:/Fast%20Documents/Chameleon/clip.mp4'
-)
-assert.equal(
-  premiereFilePathToUrl(
-    'E:\\Autre\\Downloads\\Chameleon-premiere-audio\\Chameleon-premiere-track-01.m4a'
-  ),
-  'file://localhost/E:/Autre/Downloads/Chameleon-premiere-audio/Chameleon-premiere-track-01.m4a'
 )
 assert.match(
   premiereXml,
@@ -135,8 +125,9 @@ async function testFileWriting(): Promise<void> {
     assert.equal(sidecarFiles.length, fixtureMedia.audioStreams.length)
     const writtenXml = await readFile(output.xmlPath, 'utf8')
     assert.match(writtenXml, /<xmeml version="4">/)
-    assert.match(writtenXml, /<clipitem id="audio-track-2-clip-1">/)
-    assert.equal(writtenXml.match(/<effectcategory>audiopan<\/effectcategory>/g)?.length ?? 0, 0)
+    assert.match(writtenXml, /<clipitem id="audio-stream-2-clip-1">/)
+    assert.equal(writtenXml.match(/<clipitem id="audio-stream-\d+-clip-1">/g)?.length, 2)
+    assert.equal(writtenXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 0)
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true })
   }

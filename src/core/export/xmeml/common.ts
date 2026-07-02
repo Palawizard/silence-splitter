@@ -143,7 +143,12 @@ export function videoClipXml(
   model: TimelineExportModel,
   segmentIndex: number,
   indentation: string,
-  pathToUrl: MediaPathToUrl = filePathToUrl
+  pathToUrl: MediaPathToUrl = filePathToUrl,
+  buildLinks: (
+    model: TimelineExportModel,
+    clipIndex: number,
+    linkIndentation: string
+  ) => string[] = linksXml
 ): string[] {
   const segment = model.segments[segmentIndex]
   const lines = [
@@ -165,7 +170,7 @@ export function videoClipXml(
   }
 
   lines.push(
-    ...linksXml(model, segment.index, `${indentation}  `),
+    ...buildLinks(model, segment.index, `${indentation}  `),
     `${indentation}  <sourcetrack>`,
     `${indentation}    <mediatype>video</mediatype>`,
     `${indentation}    <trackindex>1</trackindex>`,
