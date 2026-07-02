@@ -12,10 +12,11 @@ import { checkFfmpegAvailable } from '../ffmpeg/check'
 import { probeMedia } from '../ffmpeg/probe'
 import { extractWaveformEnvelope } from '../ffmpeg/waveform'
 import { writeResolveOtio, writeResolveXml } from '../export/resolve-xml'
-import { writePremiereXml } from '../export/premiere-xml'
+import { writePremiereOtio, writePremiereXml } from '../export/premiere-xml'
 
 export type TimelineExportNle = 'resolve' | 'premiere'
 export type ResolveTimelineFormat = 'otio' | 'xml'
+export type PremiereTimelineFormat = 'otio' | 'xml'
 
 export function registerIpcHandlers(): void {
   ipcMain.handle('app:check-ffmpeg', () => checkFfmpegAvailable())
@@ -135,12 +136,16 @@ export function registerIpcHandlers(): void {
         keepSegments: KeepSegment[]
         nle: TimelineExportNle
         resolveFormat?: ResolveTimelineFormat
+        premiereFormat?: PremiereTimelineFormat
       }
     ) => {
       const window = BrowserWindow.getFocusedWindow()
       const sourceName = parse(payload.media.filePath).name
       const isResolve = payload.nle === 'resolve'
-      const isOtio = isResolve && payload.resolveFormat !== 'xml'
+      const isPremiere = payload.nle === 'premiere'
+      const isOtio = isResolve
+        ? payload.resolveFormat !== 'xml'
+        : payload.premiereFormat !== 'xml'
       const extension = isOtio ? 'otio' : 'xml'
       const nleSlug = isResolve ? 'resolve' : 'premiere'
       const options: SaveDialogOptions = {
@@ -151,7 +156,12 @@ export function registerIpcHandlers(): void {
           `${sourceName}-${nleSlug}.${extension}`
         ),
         filters: isOtio
-          ? [{ name: 'Timeline Resolve OTIO', extensions: ['otio'] }]
+          ? [
+              {
+                name: isResolve ? 'Timeline Resolve OTIO' : 'Timeline Premiere OTIO',
+                extensions: ['otio']
+              }
+            ]
           : isResolve
             ? [{ name: 'Timeline Resolve XML', extensions: ['xml'] }]
             : [{ name: 'Timeline Premiere Pro XML', extensions: ['xml'] }]
@@ -164,7 +174,16 @@ export function registerIpcHandlers(): void {
         return { canceled: true }
       }
 
-      if (payload.nle === 'premiere') {
+      if (isPremiere) {
+        if (isOtio) {
+          const files = await writePremiereOtio(result.filePath, payload.media, payload.keepSegments)
+          return {
+            canceled: false,
+            filePath: files.otioPath,
+            audioDirectoryPath: files.audioDirectoryPath
+          }
+        }
+
         const files = await writePremiereXml(result.filePath, payload.media, payload.keepSegments)
         return {
           canceled: false,

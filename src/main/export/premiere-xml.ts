@@ -1,14 +1,33 @@
 import type { KeepSegment } from '@core/models/keep-segment'
 import type { MediaInfo } from '@core/models/media-info'
 import { buildTimelineExportModel } from '@core/export/timeline-model'
-import { generatePremiereXml } from '@core/export/premiere'
+import { generatePremiereOtio, generatePremiereXml } from '@core/export/premiere'
 import { writeFile } from 'node:fs/promises'
 import { prepareAudioSidecars } from './audio-sidecars'
-import { ensureXmlExtension } from './resolve-xml'
+import { ensureOtioExtension, ensureXmlExtension } from './resolve-xml'
 
-export type PremiereXmlExportFiles = {
-  xmlPath: string
+type PremiereExportFiles = {
   audioDirectoryPath?: string
+}
+
+export type PremiereXmlExportFiles = PremiereExportFiles & {
+  xmlPath: string
+}
+
+export type PremiereOtioExportFiles = PremiereExportFiles & {
+  otioPath: string
+}
+
+export async function writePremiereOtio(
+  outputPath: string,
+  media: MediaInfo,
+  keepSegments: KeepSegment[]
+): Promise<PremiereOtioExportFiles> {
+  const otioPath = ensureOtioExtension(outputPath)
+  const preparedAudio = await prepareAudioSidecars(otioPath, media)
+  const model = buildTimelineExportModel(media, keepSegments, undefined, preparedAudio.sidecars)
+  await writeFile(otioPath, generatePremiereOtio(model), 'utf8')
+  return { otioPath, audioDirectoryPath: preparedAudio.directoryPath }
 }
 
 export async function writePremiereXml(

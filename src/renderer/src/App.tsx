@@ -23,6 +23,7 @@ type LoadState = 'idle' | 'probing' | 'waveform' | 'detecting' | 'ready' | 'erro
 type ExportState = 'idle' | 'exporting' | 'success'
 type TimelineExportNle = 'resolve' | 'premiere'
 type ResolveTimelineFormat = 'otio' | 'xml'
+type PremiereTimelineFormat = 'otio' | 'xml'
 
 const PARAM_FIELDS: {
   key: keyof DetectionParams
@@ -50,6 +51,7 @@ export default function App() {
   const [exportState, setExportState] = useState<ExportState>('idle')
   const [exportNle, setExportNle] = useState<TimelineExportNle>('resolve')
   const [resolveExportFormat, setResolveExportFormat] = useState<ResolveTimelineFormat>('otio')
+  const [premiereExportFormat, setPremiereExportFormat] = useState<PremiereTimelineFormat>('otio')
   const [exportedPath, setExportedPath] = useState<string | null>(null)
   const [exportedAudioDirectory, setExportedAudioDirectory] = useState<string | null>(null)
 
@@ -200,7 +202,8 @@ export default function App() {
         media,
         keepSegments,
         nle: exportNle,
-        resolveFormat: exportNle === 'resolve' ? resolveExportFormat : undefined
+        resolveFormat: exportNle === 'resolve' ? resolveExportFormat : undefined,
+        premiereFormat: exportNle === 'premiere' ? premiereExportFormat : undefined
       })
       if (result.canceled) {
         setExportState('idle')
@@ -429,6 +432,23 @@ export default function App() {
                     >
                       <option value="otio">OTIO — recommandé, import rapide</option>
                       <option value="xml">XML — compatibilité</option>
+                    </select>
+                  </div>
+                )}
+                {exportNle === 'premiere' && (
+                  <div className="field">
+                    <label htmlFor="premiere-format">Format Premiere</label>
+                    <select
+                      id="premiere-format"
+                      className="select"
+                      value={premiereExportFormat}
+                      onChange={(event) =>
+                        setPremiereExportFormat(event.target.value as PremiereTimelineFormat)
+                      }
+                      disabled={exportState === 'exporting'}
+                    >
+                      <option value="otio">OTIO — recommandé, pistes stéréo natives</option>
+                      <option value="xml">XML — compatibilité (pistes mono G/D)</option>
                     </select>
                   </div>
                 )}

@@ -53,12 +53,14 @@ export type PlaybackChunkResponse = {
 
 export type TimelineExportNle = 'resolve' | 'premiere'
 export type ResolveTimelineFormat = 'otio' | 'xml'
+export type PremiereTimelineFormat = 'otio' | 'xml'
 
 export type TimelineExportRequest = {
   media: MediaInfo
   keepSegments: KeepSegment[]
   nle: TimelineExportNle
   resolveFormat?: ResolveTimelineFormat
+  premiereFormat?: PremiereTimelineFormat
 }
 
 export type TimelineExportResponse = {

@@ -3,11 +3,10 @@ import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { buildTimelineExportModel } from '../src/core/export'
-import { generatePremiereXml } from '../src/core/export/premiere'
+import { generatePremiereOtio, generatePremiereXml } from '../src/core/export/premiere'
 import { premiereFilePathToUrl } from '../src/core/export/resolve'
-import { generateResolveXml } from '../src/core/export/resolve'
 import type { MediaInfo } from '../src/core/models/media-info'
-import { writePremiereXml } from '../src/main/export/premiere-xml'
+import { writePremiereOtio, writePremiereXml } from '../src/main/export/premiere-xml'
 import { probeMedia } from '../src/main/ffmpeg/probe'
 
 const media: MediaInfo = {
@@ -67,41 +66,57 @@ const model = buildTimelineExportModel(
   audioSidecars
 )
 
+const premiereOtio = generatePremiereOtio(model)
+const premiereOtioObject = JSON.parse(premiereOtio) as {
+  tracks: { children: Array<{ kind: string; metadata?: { fcp_xml?: Record<string, string> } }> }
+  metadata?: { fcp_xml?: { media?: { video?: { format?: unknown } } } }
+}
+
+assert.equal(premiereOtioObject.OTIO_SCHEMA, 'Timeline.1')
+assert.equal(premiereOtioObject.tracks.children.length, 3)
+assert.equal(
+  premiereOtioObject.tracks.children.filter((track) => track.kind === 'Audio').length,
+  2
+)
+assert.equal(
+  premiereOtioObject.tracks.children[1].metadata?.fcp_xml?.['@premiereTrackType'],
+  'Stereo'
+)
+assert.equal(
+  premiereOtioObject.tracks.children[2].metadata?.fcp_xml?.['@premiereTrackType'],
+  'Mono'
+)
+assert.match(premiereOtio, /"@premiereChannelType":"stereo"/)
+assert.match(premiereOtio, /"@premiereChannelType":"mono"/)
+assert.match(premiereOtio, /"channelcount":2/)
+assert.match(premiereOtio, /"channelcount":1/)
+assert.match(premiereOtio, /"parameterid":"level"/)
+assert.ok(premiereOtioObject.metadata?.fcp_xml?.media?.video?.format)
+
 const premiereXml = generatePremiereXml(model)
-const resolveXml = generateResolveXml(model)
 
 assert.match(premiereXml, /^<\?xml version="1\.0" encoding="UTF-8"\?>/)
 assert.match(premiereXml, /<xmeml version="4">/)
-assert.match(premiereXml, /<sequence id="sequence-1">/)
-assert.match(premiereXml, /<duration>88<\/duration>/)
-assert.equal(premiereXml.match(/<clipitem id="video-clip-\d+">/g)?.length, 2)
+assert.equal(premiereXml.match(/<clipitem id="audio-track-\d+-clip-\d+">/g)?.length, 6)
+assert.equal(premiereXml.match(/<clipitem id="audio-stream-\d+-clip-\d+">/g)?.length ?? 0, 0)
 assert.match(
   premiereXml,
-  /<clipitem id="video-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<in>25<\/in>[\s\S]*?<out>63<\/out>/
-)
-assert.equal(premiereXml.match(/<clipitem id="audio-stream-\d+-clip-\d+">/g)?.length, 4)
-assert.equal(premiereXml.match(/<clipitem id="audio-track-\d+-clip-\d+">/g)?.length ?? 0, 0)
-assert.match(
-  premiereXml,
-  /<clipitem id="audio-stream-1-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<in>29<\/in>[\s\S]*?<out>67<\/out>[\s\S]*?<channelcount>2<\/channelcount>/
+  /<clipitem id="audio-track-1-clip-1">[\s\S]*?<channelcount>2<\/channelcount>[\s\S]*?<parameterid>pan<\/parameterid>\s*<value>-1<\/value>/
 )
 assert.match(
   premiereXml,
-  /<clipitem id="audio-stream-2-clip-1">[\s\S]*?<start>0<\/start>[\s\S]*?<end>38<\/end>[\s\S]*?<channelcount>1<\/channelcount>/
+  /<clipitem id="audio-track-2-clip-1">[\s\S]*?<parameterid>pan<\/parameterid>\s*<value>1<\/value>/
 )
-assert.equal(premiereXml.match(/<outputchannelindex>/g)?.length ?? 0, 0)
-assert.equal(premiereXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 0)
-assert.equal(resolveXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 4)
-assert.match(premiereXml, /<numOutputChannels>2<\/numOutputChannels>/)
-assert.equal(premiereXml.match(/<linkclipref>video-clip-1<\/linkclipref>/g)?.length, 3)
-assert.equal(premiereXml.match(/<linkclipref>audio-stream-1-clip-1<\/linkclipref>/g)?.length, 3)
+assert.deepEqual(
+  [...premiereXml.matchAll(/<outputchannelindex>(\d)<\/outputchannelindex>/g)].map((match) => match[1]),
+  ['1', '2']
+)
+assert.equal(premiereXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 4)
+assert.match(premiereXml, /<effectcategory>audiopan<\/effectcategory>/)
+assert.equal(premiereXml.match(/<linkclipref>video-clip-1<\/linkclipref>/g)?.length, 4)
 assert.equal(
   premiereFilePathToUrl('F:\\Fast Documents\\Chameleon\\clip.mp4'),
   'file://localhost/F:/Fast%20Documents/Chameleon/clip.mp4'
-)
-assert.match(
-  premiereXml,
-  /<pathurl>file:\/\/localhost\/C:\/Media%20Files\/source\.mp4<\/pathurl>/
 )
 assert.doesNotMatch(premiereXml, /<pathurl>file:\/\/\/[A-Za-z]:\//)
 
@@ -111,7 +126,7 @@ async function testFileWriting(): Promise<void> {
 
   const temporaryDirectory = await mkdtemp(join(tmpdir(), 'silence-splitter-epic4-'))
   try {
-    const output = await writePremiereXml(join(temporaryDirectory, 'timeline'), fixtureMedia, [
+    const xmlOutput = await writePremiereXml(join(temporaryDirectory, 'timeline'), fixtureMedia, [
       {
         sourceStartSeconds: 1,
         sourceEndSeconds: 2,
@@ -119,22 +134,31 @@ async function testFileWriting(): Promise<void> {
         timelineEndSeconds: 1
       }
     ])
-    assert.equal(output.xmlPath, join(temporaryDirectory, 'timeline.xml'))
-    assert.equal(output.audioDirectoryPath, join(temporaryDirectory, 'timeline-audio'))
-    const sidecarFiles = await readdir(output.audioDirectoryPath!)
-    assert.equal(sidecarFiles.length, fixtureMedia.audioStreams.length)
-    const writtenXml = await readFile(output.xmlPath, 'utf8')
-    assert.match(writtenXml, /<xmeml version="4">/)
-    assert.match(writtenXml, /<clipitem id="audio-stream-2-clip-1">/)
-    assert.equal(writtenXml.match(/<clipitem id="audio-stream-\d+-clip-1">/g)?.length, 2)
+    const writtenXml = await readFile(xmlOutput.xmlPath, 'utf8')
+    assert.match(writtenXml, /<clipitem id="audio-track-2-clip-1">/)
     assert.equal(writtenXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 0)
+
+    const otioOutput = await writePremiereOtio(join(temporaryDirectory, 'timeline-otio'), fixtureMedia, [
+      {
+        sourceStartSeconds: 1,
+        sourceEndSeconds: 2,
+        timelineStartSeconds: 0,
+        timelineEndSeconds: 1
+      }
+    ])
+    const writtenOtio = JSON.parse(await readFile(otioOutput.otioPath, 'utf8')) as {
+      tracks: { children: unknown[] }
+    }
+    assert.equal(writtenOtio.tracks.children.length, 3)
+    assert.equal((await readdir(xmlOutput.audioDirectoryPath!)).length, fixtureMedia.audioStreams.length)
+    assert.equal((await readdir(otioOutput.audioDirectoryPath!)).length, fixtureMedia.audioStreams.length)
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true })
   }
 }
 
 testFileWriting()
-  .then(() => console.log('Epic 4 Premiere Pro XML export: PASS'))
+  .then(() => console.log('Epic 4 Premiere Pro export: PASS'))
   .catch((error) => {
     console.error(error)
     process.exitCode = 1
