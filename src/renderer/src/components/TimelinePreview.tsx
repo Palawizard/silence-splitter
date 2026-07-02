@@ -1036,7 +1036,6 @@ export default function TimelinePreview({
         </div>
       </div>
 
-      <p className="timeline-hint">{t('preview.playbackHint')}</p>
       {playbackError && <p className="timeline-playback-error">{playbackError}</p>}
     </div>
   )

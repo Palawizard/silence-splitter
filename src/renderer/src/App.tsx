@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Settings } from 'lucide-react'
+import {
+  AudioWaveform,
+  Check,
+  Download,
+  Film,
+  FolderOpen,
+  Music2,
+  Settings,
+  SlidersHorizontal
+} from 'lucide-react'
 import type { KeepSegment } from '@core/models/keep-segment'
 import type { MediaInfo } from '@core/models/media-info'
 import type { TimelinePreviewData } from '@core/models/timeline-preview'
@@ -264,9 +273,11 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <div className="app-header-text">
-          <h1>{t('app.title')}</h1>
-          <p className="subtitle">{t('app.subtitle')}</p>
+        <div className="app-brand">
+          <div className="app-header-text">
+            <h1>{t('app.title')}</h1>
+            <p className="subtitle">{t('app.subtitle')}</p>
+          </div>
         </div>
         <button
           type="button"
@@ -293,36 +304,47 @@ export default function App() {
         </div>
       )}
 
-      <section className="card">
-        <h2>{t('source.title')}</h2>
-        <div className="actions">
+      <section className={`card source-card${media ? ' has-media' : ''}`}>
+        <div className="source-card-copy">
+          <div className="section-heading">
+            <span className="section-icon" aria-hidden>
+              <Film size={18} {...outlineIconProps} />
+            </span>
+            <h2>{t('source.title')}</h2>
+          </div>
+          {media ? (
+            <p className="file-name" title={media.filePath}>{media.filePath}</p>
+          ) : (
+            <p className="source-description">{t('source.emptyHint')}</p>
+          )}
+          {isLoading && (
+            <p className="status">
+              <span className="status-dot" aria-hidden />
+              {loadState === 'detecting' ? t('source.detecting') : t('source.analyzing')}
+            </p>
+          )}
+        </div>
+        <div className="source-actions">
           <button
             type="button"
             className="btn btn-primary"
             onClick={handleSelectFile}
             disabled={!ffmpegOk || isLoading}
           >
+            <FolderOpen size={17} {...outlineIconProps} aria-hidden />
             {t('source.chooseFile')}
           </button>
         </div>
-        {media && <p className="file-name">{media.filePath}</p>}
-        {isLoading && (
-          <p className="status">
-            {loadState === 'detecting' ? t('source.detecting') : t('source.analyzing')}
-          </p>
-        )}
       </section>
-
-      {!media && ffmpegOk && loadState === 'idle' && (
-        <section className="card card-empty">
-          <p className="muted">{t('source.emptyHint')}</p>
-        </section>
-      )}
 
       {media && (
         <>
-          <section className="card">
-            <h2>{t('info.title')}</h2>
+          <div className="workspace-grid">
+          <section className="card info-card">
+            <div className="section-heading">
+              <span className="section-icon" aria-hidden><Film size={17} {...outlineIconProps} /></span>
+              <h2>{t('info.title')}</h2>
+            </div>
             <dl className="meta-grid">
               <div>
                 <dt>{t('info.duration')}</dt>
@@ -349,7 +371,10 @@ export default function App() {
           </section>
 
           <section className="card">
-            <h2>{t('tracks.title')}</h2>
+            <div className="section-heading">
+              <span className="section-icon" aria-hidden><Music2 size={17} {...outlineIconProps} /></span>
+              <h2>{t('tracks.title')}</h2>
+            </div>
             <p className="hint">{t('tracks.hint')}</p>
             {media.audioStreams.length === 0 ? (
               <p className="muted">{t('tracks.none')}</p>
@@ -384,7 +409,10 @@ export default function App() {
 
           {selectedTracks.length > 0 && (
             <section className="card">
-              <h2>{t('detection.title')}</h2>
+              <div className="section-heading">
+                <span className="section-icon" aria-hidden><SlidersHorizontal size={17} {...outlineIconProps} /></span>
+                <h2>{t('detection.title')}</h2>
+              </div>
               <div className="field">
                 <label htmlFor="preset-select">{t('detection.preset')}</label>
                 <select
@@ -423,14 +451,15 @@ export default function App() {
               </div>
             </section>
           )}
+          </div>
 
           {preview && loadState === 'ready' && (
             <>
               <section className="card card-wide">
-                <h2>{t('preview.title')}</h2>
-                <p className="hint">
-                  {t('preview.hint', { count: keepSegments.length })}
-                </p>
+                <div className="section-heading">
+                  <span className="section-icon" aria-hidden><AudioWaveform size={17} {...outlineIconProps} /></span>
+                  <h2>{t('preview.title')}</h2>
+                </div>
                 <TimelinePreview
                   data={preview}
                   durationSeconds={media?.durationSeconds ?? preview.waveform.durationSeconds}
@@ -443,9 +472,16 @@ export default function App() {
               </section>
 
               <section className="card">
-                <h2>{t('export.title')}</h2>
-                <p className="hint">{t('export.hint')}</p>
-                <div className="field">
+                <div className="export-layout">
+                  <div className="export-intro">
+                    <div className="section-heading">
+                      <span className="section-icon" aria-hidden><Download size={17} {...outlineIconProps} /></span>
+                      <h2>{t('export.title')}</h2>
+                    </div>
+                    <p className="hint">{t('export.hint')}</p>
+                  </div>
+                  <div className="export-controls">
+                <div className="field compact-field">
                   <label htmlFor="export-nle">{t('export.nle')}</label>
                   <select
                     id="export-nle"
@@ -463,7 +499,7 @@ export default function App() {
                   </select>
                 </div>
                 {exportNle === 'resolve' && (
-                  <div className="field">
+                  <div className="field compact-field">
                     <label htmlFor="resolve-format">{t('export.resolveFormat')}</label>
                     <select
                       id="resolve-format"
@@ -482,7 +518,7 @@ export default function App() {
                   </div>
                 )}
                 {exportNle === 'premiere' && (
-                  <div className="field">
+                  <div className="field compact-field">
                     <label htmlFor="premiere-format">{t('export.premiereFormat')}</label>
                     <select
                       id="premiere-format"
@@ -506,10 +542,15 @@ export default function App() {
                   onClick={handleExportTimeline}
                   disabled={exportState === 'exporting'}
                 >
+                  <Download size={17} {...outlineIconProps} aria-hidden />
                   {exportButtonLabel}
                 </button>
+                  </div>
+                </div>
                 {exportState === 'success' && exportedPath && (
                   <p className="export-success" role="status">
+                    <Check size={16} {...outlineIconProps} aria-hidden />
+                    <span className="export-success-copy">
                     {exportSuccessNleLabel} : <span>{exportedPath}</span>
                     {exportedAudioDirectory && (
                       <>
@@ -517,6 +558,7 @@ export default function App() {
                         {t('export.audioTracks')} : <span>{exportedAudioDirectory}</span>
                       </>
                     )}
+                    </span>
                   </p>
                 )}
               </section>

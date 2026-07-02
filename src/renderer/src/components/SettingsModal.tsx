@@ -1,5 +1,5 @@
 import type { AppLocale, ThemeMode } from '@core/settings'
-import { X } from 'lucide-react'
+import { Settings, X } from 'lucide-react'
 import { useI18n } from '../context/I18nProvider'
 import { useSettings } from '../context/SettingsProvider'
 import { outlineIconProps } from '../utils/icons'
@@ -23,20 +23,26 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   return (
     <div className="modal-overlay" role="presentation" onClick={onClose}>
       <div
-        className="modal-card"
+        className="modal-card settings-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="modal-header">
-          <h2 id="settings-title">{t('settings.title')}</h2>
+          <div className="settings-modal-title">
+            <span className="section-icon" aria-hidden>
+              <Settings size={17} {...outlineIconProps} />
+            </span>
+            <h2 id="settings-title">{t('settings.title')}</h2>
+          </div>
           <button type="button" className="btn modal-close" onClick={onClose} aria-label={t('settings.close')}>
             <X size={18} {...outlineIconProps} aria-hidden />
           </button>
         </div>
 
-        <div className="field">
+        <div className="settings-fields">
+        <div className="field settings-field">
           <label htmlFor="settings-locale">{t('settings.language')}</label>
           <select
             id="settings-locale"
@@ -49,7 +55,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           </select>
         </div>
 
-        <div className="field">
+        <div className="field settings-field">
           <label htmlFor="settings-theme">{t('settings.theme')}</label>
           <select
             id="settings-theme"
@@ -61,6 +67,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             <option value="light">{t('settings.themeLight')}</option>
             <option value="dark">{t('settings.themeDark')}</option>
           </select>
+        </div>
         </div>
       </div>
     </div>
