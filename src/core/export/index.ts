@@ -3,7 +3,8 @@ import { davinciResolveExporter } from './resolve'
 export { buildTimelineExportModel, createTimelineRate } from './timeline-model'
 export type {
   ExportFormat,
-  TimelineExportAudioStream,
+  TimelineAudioSidecar,
+  TimelineExportAudioSource,
   TimelineExportAudioTrack,
   TimelineExportModel,
   TimelineExportSegment,

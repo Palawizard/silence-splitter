@@ -4,7 +4,8 @@ import type { MediaInfo } from '../models/media-info'
 import type {
   TimelineExportModel,
   TimelineExportSegment,
-  TimelineRate
+  TimelineRate,
+  TimelineAudioSidecar
 } from './types'
 
 const CANONICAL_RATES = [
@@ -90,7 +91,8 @@ function buildSegments(
 export function buildTimelineExportModel(
   media: MediaInfo,
   keepSegments: KeepSegment[],
-  timelineName = `${parse(media.filePath).name} - silences coupés`
+  timelineName = `${parse(media.filePath).name} - silences coupés`,
+  audioSidecars: TimelineAudioSidecar[] = []
 ): TimelineExportModel {
   if (!media.video) {
     throw new Error('A video stream is required for XML export')
@@ -102,27 +104,40 @@ export function buildTimelineExportModel(
   const rate = createTimelineRate(media.video.nominalFrameRate ?? media.video.frameRate)
   const durationFrames = secondsToFrame(media.durationSeconds, rate.framesPerSecond)
   const segments = buildSegments(keepSegments, durationFrames, rate.framesPerSecond)
-  const audioStreams = media.audioStreams.map((stream, index) => ({
-    sourceStreamOrder: index + 1,
-    sourceStreamIndex: stream.index,
-    codec: stream.codec,
-    channels: stream.channels,
-    sampleRate: stream.sampleRate,
-    language: stream.language,
-    title: stream.title
-  }))
-  let sourceTrackIndex = 0
-  const audioTracks = audioStreams.flatMap((stream) =>
-    Array.from({ length: stream.channels }, (_unused, channelIndex) => {
-      sourceTrackIndex += 1
+  const sidecarsByStream = new Map(
+    audioSidecars.map((sidecar) => [sidecar.sourceStreamIndex, sidecar.filePath])
+  )
+  const audioSources = media.audioStreams.flatMap((stream, index) => {
+    const filePath = sidecarsByStream.get(stream.index)
+    if (!filePath) {
+      return []
+    }
+    return {
+      sourceStreamOrder: index + 1,
+      sourceStreamIndex: stream.index,
+      filePath,
+      fileName: basename(filePath),
+      fileId: `audio-file-${index + 1}`,
+      channels: stream.channels,
+      sampleRate: stream.sampleRate
+    }
+  })
+
+  if (audioSources.length !== media.audioStreams.length) {
+    throw new Error('Every source audio stream requires a remuxed sidecar')
+  }
+  let timelineTrackIndex = 0
+  const audioTracks = audioSources.flatMap((source) =>
+    Array.from({ length: source.channels }, (_unused, channelIndex) => {
+      timelineTrackIndex += 1
       return {
-        timelineTrackIndex: sourceTrackIndex,
-        sourceTrackIndex,
-        sourceStreamOrder: stream.sourceStreamOrder,
-        sourceStreamIndex: stream.sourceStreamIndex,
+        timelineTrackIndex,
+        sourceTrackIndex: channelIndex + 1,
+        sourceStreamOrder: source.sourceStreamOrder,
+        sourceStreamIndex: source.sourceStreamIndex,
+        fileId: source.fileId,
         sourceChannelIndex: channelIndex + 1,
-        groupIndex: stream.sourceStreamOrder,
-        sampleRate: stream.sampleRate
+        groupIndex: source.sourceStreamOrder
       }
     })
   )
@@ -137,7 +152,7 @@ export function buildTimelineExportModel(
       videoStreamIndex: media.video.index,
       width: media.video.width,
       height: media.video.height,
-      audioStreams,
+      audioSources,
       audioTracks
     },
     segments,
