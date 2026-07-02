@@ -59,6 +59,7 @@ export type ResolveExportRequest = {
 export type ResolveExportResponse = {
   canceled: boolean
   filePath?: string
+  fallbackXmlPath?: string
   audioDirectoryPath?: string
 }
 

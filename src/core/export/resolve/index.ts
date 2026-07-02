@@ -2,6 +2,7 @@ import type { XmlExporter } from '../types'
 import { generateResolveXml } from './generate'
 
 export { generateResolveXml } from './generate'
+export { generateResolveOtio } from './generate-otio'
 export { filePathToUrl } from './path-url'
 
 export const davinciResolveExporter: XmlExporter = {

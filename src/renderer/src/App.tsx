@@ -47,6 +47,7 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [exportState, setExportState] = useState<ExportState>('idle')
   const [exportedPath, setExportedPath] = useState<string | null>(null)
+  const [exportedFallbackPath, setExportedFallbackPath] = useState<string | null>(null)
   const [exportedAudioDirectory, setExportedAudioDirectory] = useState<string | null>(null)
 
   useEffect(() => {
@@ -189,6 +190,7 @@ export default function App() {
 
     setExportState('exporting')
     setExportedPath(null)
+    setExportedFallbackPath(null)
     setExportedAudioDirectory(null)
     setErrorMessage(null)
     try {
@@ -199,11 +201,12 @@ export default function App() {
       }
 
       setExportedPath(result.filePath ?? null)
+      setExportedFallbackPath(result.fallbackXmlPath ?? null)
       setExportedAudioDirectory(result.audioDirectoryPath ?? null)
       setExportState('success')
     } catch {
       setExportState('idle')
-      setErrorMessage("Impossible d'exporter la timeline XML.")
+      setErrorMessage("Impossible d'exporter la timeline.")
     }
   }
 
@@ -378,8 +381,9 @@ export default function App() {
               <section className="card">
                 <h2>Exporter</h2>
                 <p className="hint">
-                  Crée une timeline XML et copie chaque piste audio sans réencodage. Conservez
-                  le dossier audio avec le fichier XML. La vidéo source reste inchangée.
+                  Crée une timeline Resolve rapide à importer et copie chaque piste audio sans
+                  réencodage. Conservez tous les fichiers exportés ensemble. La vidéo source reste
+                  inchangée.
                 </p>
                 <button
                   type="button"
@@ -393,7 +397,13 @@ export default function App() {
                 </button>
                 {exportState === 'success' && exportedPath && (
                   <p className="export-success" role="status">
-                    Timeline XML enregistrée : <span>{exportedPath}</span>
+                    Timeline Resolve enregistrée : <span>{exportedPath}</span>
+                    {exportedFallbackPath && (
+                      <>
+                        <br />
+                        XML de secours : <span>{exportedFallbackPath}</span>
+                      </>
+                    )}
                     {exportedAudioDirectory && (
                       <>
                         <br />
