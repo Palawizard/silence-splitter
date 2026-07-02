@@ -33,7 +33,7 @@ async function main(): Promise<void> {
   await access(resolve('src/main/ffmpeg/resolve-binary.ts'))
 
   if (
-    packageConfig.version !== '1.0.0-beta.1' ||
+    !/^1\.0\.0-beta\.\d+$/.test(packageConfig.version) ||
     packageConfig.build?.appId !== 'com.palawizard.silence-splitter' ||
     packageConfig.build.publish?.provider !== 'github' ||
     !packageConfig.scripts.dist

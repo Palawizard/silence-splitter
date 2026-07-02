@@ -2,6 +2,16 @@
 
 All notable changes to Silence Splitter are documented in this file.
 
+## [1.0.0-beta.2] - 2026-07-02
+
+### Added
+
+- Windows installer bundles ffmpeg and ffprobe; packaged builds no longer require a separate media tools install.
+
+### Changed
+
+- GitHub releases use hand-written English release notes per tag.
+
 ## [1.0.0-beta.1] - 2026-07-02
 
 ### Added
