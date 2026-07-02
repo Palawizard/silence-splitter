@@ -1,0 +1,118 @@
+{
+  "app": {
+    "title": "Silence Splitter",
+    "subtitle": "Détecte les silences et exporte une timeline pour le montage."
+  },
+  "settings": {
+    "title": "Paramètres",
+    "language": "Langue",
+    "theme": "Thème",
+    "themeSystem": "Système",
+    "themeLight": "Clair",
+    "themeDark": "Sombre",
+    "close": "Fermer"
+  },
+  "welcome": {
+    "title": "Bienvenue",
+    "subtitle": "Choisissez la langue de l'interface.",
+    "french": "Français",
+    "english": "English",
+    "continue": "Continuer"
+  },
+  "errors": {
+    "detectSilences": "Impossible de détecter les silences.",
+    "probeFile": "Impossible d'analyser le fichier.",
+    "exportTimeline": "Impossible d'exporter la timeline.",
+    "playbackPreview": "Impossible de lire l'aperçu audio."
+  },
+  "ffmpeg": {
+    "missing": "ffmpeg et ffprobe sont requis. Installez-les et relancez l'application."
+  },
+  "source": {
+    "title": "Vidéo source",
+    "chooseFile": "Choisir un fichier MP4",
+    "analyzing": "Analyse en cours…",
+    "detecting": "Détection des silences…",
+    "emptyHint": "Choisissez un fichier MP4 pour commencer l'analyse."
+  },
+  "info": {
+    "title": "Informations",
+    "duration": "Durée",
+    "frameRate": "Images par seconde",
+    "resolution": "Résolution",
+    "vfrWarning": "Images par seconde variables détectées. L'export XML pourra nécessiter une vérification dans votre logiciel de montage."
+  },
+  "tracks": {
+    "title": "Pistes audio pour l'analyse",
+    "hint": "Les pistes cochées sont mélangées pour la détection des silences. La vidéo source reste inchangée à l'export.",
+    "none": "Aucune piste audio trouvée.",
+    "label": "Piste {ordinal} · {codec} · {channels} can. · {extra}"
+  },
+  "detection": {
+    "title": "Détection des silences",
+    "preset": "Préréglage",
+    "paramRemoveSilence": "Couper les silences plus longs que",
+    "paramIgnoreShort": "Ignorer les détections plus courtes que",
+    "paramLeftPadding": "Marge avant la parole",
+    "paramRightPadding": "Marge après la parole",
+    "secondsSuffix": "(s)"
+  },
+  "presets": {
+    "gaming-energetic": "Gaming énergique",
+    "gaming-chill": "Gaming chill / let's play",
+    "podcast-facecam": "Podcast / facecam",
+    "tiktok-ultra-cut": "TikTok ultra cut"
+  },
+  "preview": {
+    "title": "Aperçu timeline",
+    "hint": "Zones vertes : passages conservés. Zones roses : silences coupés. Même découpage que l'export ({count} segment(s)).",
+    "segmentCount": {
+      "one": "{count} segment conservé",
+      "other": "{count} segments conservés"
+    },
+    "keptDuration": {
+      "one": "{duration} gardé",
+      "other": "{duration} gardés"
+    },
+    "cutDuration": {
+      "one": "{duration} coupé",
+      "other": "{duration} coupés"
+    },
+    "threshold": "Seuil {db} dB",
+    "ariaRegion": "Aperçu de la timeline avec lecture audio",
+    "playbackHint": "Lecture du montage avec le mix des pistes cochées.",
+    "transportPrepare": "Préparation audio",
+    "transportPause": "Pause",
+    "transportPlay": "Lecture",
+    "transportStop": "Arrêter",
+    "scrollLeft": "Défiler vers la gauche",
+    "scrollRight": "Défiler vers la droite",
+    "positionSlider": "Position dans la timeline"
+  },
+  "export": {
+    "title": "Exporter",
+    "hint": "Copie chaque piste audio sans réencodage. Conservez la timeline et son dossier audio ensemble. La vidéo source reste inchangée.",
+    "nle": "Logiciel de montage",
+    "resolve": "DaVinci Resolve",
+    "premiere": "Premiere Pro",
+    "resolveFormat": "Format Resolve",
+    "premiereFormat": "Format Premiere",
+    "otioResolve": "OTIO — recommandé, import rapide",
+    "xmlResolve": "XML — compatibilité",
+    "otioPremiere": "OTIO — recommandé, pistes stéréo natives",
+    "xmlPremiere": "XML — compatibilité (pistes mono G/D)",
+    "inProgress": "Export en cours…",
+    "buttonResolve": "Exporter pour DaVinci Resolve",
+    "buttonPremiere": "Exporter pour Premiere Pro",
+    "successResolve": "Timeline Resolve enregistrée",
+    "successPremiere": "Timeline Premiere enregistrée",
+    "audioTracks": "Pistes audio"
+  },
+  "format": {
+    "durationSeconds": "{value} s",
+    "durationMinutes": "{minutes} min {seconds} s",
+    "durationHours": "{hours} h {minutes} min {seconds} s",
+    "frameRate": "{fps} ips",
+    "channels": "{count} can."
+  }
+}

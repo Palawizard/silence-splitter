@@ -1,0 +1,118 @@
+{
+  "app": {
+    "title": "Silence Splitter",
+    "subtitle": "Detect silences and export a timeline for your editor."
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "close": "Close"
+  },
+  "welcome": {
+    "title": "Welcome",
+    "subtitle": "Choose the interface language.",
+    "french": "Français",
+    "english": "English",
+    "continue": "Continue"
+  },
+  "errors": {
+    "detectSilences": "Could not detect silences.",
+    "probeFile": "Could not analyze the file.",
+    "exportTimeline": "Could not export the timeline.",
+    "playbackPreview": "Could not play the audio preview."
+  },
+  "ffmpeg": {
+    "missing": "ffmpeg and ffprobe are required. Install them and restart the app."
+  },
+  "source": {
+    "title": "Source video",
+    "chooseFile": "Choose an MP4 file",
+    "analyzing": "Analyzing…",
+    "detecting": "Detecting silences…",
+    "emptyHint": "Choose an MP4 file to start analysis."
+  },
+  "info": {
+    "title": "Information",
+    "duration": "Duration",
+    "frameRate": "Frame rate",
+    "resolution": "Resolution",
+    "vfrWarning": "Variable frame rate detected. XML export may need a check in your editing software."
+  },
+  "tracks": {
+    "title": "Audio tracks for analysis",
+    "hint": "Checked tracks are mixed for silence detection. The source video is unchanged on export.",
+    "none": "No audio tracks found.",
+    "label": "Track {ordinal} · {codec} · {channels} ch. · {extra}"
+  },
+  "detection": {
+    "title": "Silence detection",
+    "preset": "Preset",
+    "paramRemoveSilence": "Cut silences longer than",
+    "paramIgnoreShort": "Ignore detections shorter than",
+    "paramLeftPadding": "Padding before speech",
+    "paramRightPadding": "Padding after speech",
+    "secondsSuffix": "(s)"
+  },
+  "presets": {
+    "gaming-energetic": "Energetic gaming",
+    "gaming-chill": "Chill gaming / let's play",
+    "podcast-facecam": "Podcast / facecam",
+    "tiktok-ultra-cut": "TikTok ultra cut"
+  },
+  "preview": {
+    "title": "Timeline preview",
+    "hint": "Green zones: kept passages. Pink zones: cut silences. Same edit as export ({count} segment(s)).",
+    "segmentCount": {
+      "one": "{count} segment kept",
+      "other": "{count} segments kept"
+    },
+    "keptDuration": {
+      "one": "{duration} kept",
+      "other": "{duration} kept"
+    },
+    "cutDuration": {
+      "one": "{duration} cut",
+      "other": "{duration} cut"
+    },
+    "threshold": "Threshold {db} dB",
+    "ariaRegion": "Timeline preview with audio playback",
+    "playbackHint": "Plays the edit using the checked track mix.",
+    "transportPrepare": "Preparing audio",
+    "transportPause": "Pause",
+    "transportPlay": "Play",
+    "transportStop": "Stop",
+    "scrollLeft": "Scroll left",
+    "scrollRight": "Scroll right",
+    "positionSlider": "Timeline position"
+  },
+  "export": {
+    "title": "Export",
+    "hint": "Copies each audio track without re-encoding. Keep the timeline and its audio folder together. The source video stays unchanged.",
+    "nle": "Editing software",
+    "resolve": "DaVinci Resolve",
+    "premiere": "Premiere Pro",
+    "resolveFormat": "Resolve format",
+    "premiereFormat": "Premiere format",
+    "otioResolve": "OTIO — recommended, fast import",
+    "xmlResolve": "XML — compatibility",
+    "otioPremiere": "OTIO — recommended, native stereo tracks",
+    "xmlPremiere": "XML — compatibility (L/R mono tracks)",
+    "inProgress": "Exporting…",
+    "buttonResolve": "Export for DaVinci Resolve",
+    "buttonPremiere": "Export for Premiere Pro",
+    "successResolve": "Resolve timeline saved",
+    "successPremiere": "Premiere timeline saved",
+    "audioTracks": "Audio tracks"
+  },
+  "format": {
+    "durationSeconds": "{value} s",
+    "durationMinutes": "{minutes} min {seconds} s",
+    "durationHours": "{hours} h {minutes} min {seconds} s",
+    "frameRate": "{fps} fps",
+    "channels": "{count} ch."
+  }
+}
