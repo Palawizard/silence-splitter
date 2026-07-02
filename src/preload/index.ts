@@ -37,6 +37,20 @@ export type SilenceDetectionResponse = {
   thresholdDisplayDb: number
 }
 
+export type PlaybackChunkRequest = WaveformRequest & {
+  keepSegments: KeepSegment[]
+  timelineStartSeconds: number
+  chunkDurationSeconds: number
+}
+
+export type PlaybackChunkResponse = {
+  samples: ArrayBuffer
+  sampleRate: number
+  timelineStartSeconds: number
+  durationSeconds: number
+  ended: boolean
+}
+
 export type ResolveExportRequest = {
   media: MediaInfo
   keepSegments: KeepSegment[]
@@ -58,6 +72,8 @@ const api = {
     ipcRenderer.invoke('media:waveform-window', request),
   detectSilences: (request: SilenceDetectionRequest): Promise<SilenceDetectionResponse> =>
     ipcRenderer.invoke('media:detect-silences', request),
+  getPlaybackChunk: (request: PlaybackChunkRequest): Promise<PlaybackChunkResponse> =>
+    ipcRenderer.invoke('media:playback-chunk', request),
   exportResolveXml: (request: ResolveExportRequest): Promise<ResolveExportResponse> =>
     ipcRenderer.invoke('export:resolve-xml', request)
 }

@@ -7,6 +7,7 @@ import { join, parse } from 'node:path'
 import { runSilenceDetection } from '../analysis/detect-silences'
 import { clearPcmCache } from '../analysis/pcm-cache'
 import { buildWaveformWindow } from '../analysis/waveform-window'
+import { buildPlaybackChunk } from '../analysis/playback-chunk'
 import { checkFfmpegAvailable } from '../ffmpeg/check'
 import { probeMedia } from '../ffmpeg/probe'
 import { extractWaveformEnvelope } from '../ffmpeg/waveform'
@@ -68,6 +69,31 @@ export function registerIpcHandlers(): void {
         payload.durationSeconds,
         payload.audioStreamIndices,
         payload.params
+      )
+    }
+  )
+
+  ipcMain.handle(
+    'media:playback-chunk',
+    async (
+      _event,
+      payload: {
+        filePath: string
+        durationSeconds: number
+        audioStreamIndices: number[]
+        keepSegments: KeepSegment[]
+        timelineStartSeconds: number
+        chunkDurationSeconds: number
+      }
+    ) => {
+      const chunkDuration = Math.min(60, Math.max(1, payload.chunkDurationSeconds))
+      return buildPlaybackChunk(
+        payload.filePath,
+        payload.durationSeconds,
+        payload.audioStreamIndices,
+        payload.keepSegments,
+        payload.timelineStartSeconds,
+        chunkDuration
       )
     }
   )

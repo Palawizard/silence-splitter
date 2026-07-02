@@ -2,6 +2,8 @@
 
 Application locale qui analyse l'audio d'une vidéo MP4, détecte les silences et exporte une timeline XML importable dans un logiciel de montage. La vidéo source n'est jamais modifiée.
 
+L'aperçu permet de lire le montage détecté, de se déplacer dans sa timeline et d'écouter le mix des pistes sélectionnées sans rendre de nouveau fichier audio.
+
 L'export Resolve crée aussi un dossier de pistes audio annexes, remuxées sans réencodage. Conservez ce dossier avec le XML pour préserver tous les flux audio du MP4.
 
 ## Stack

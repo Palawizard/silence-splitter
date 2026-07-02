@@ -11,6 +11,11 @@ import { buildTimelinePreviewData, deriveCutRegions } from '../src/core/preview'
 import { buildKeepSegments } from '../src/core/segments'
 import { secondsToFrame, secondsToTimecode, frameToSeconds } from '../src/core/time'
 import { getPresetById } from '../src/core/presets'
+import {
+  buildCutPlaybackRanges,
+  cutTimelineDuration,
+  timelineTimeToSourceTime
+} from '../src/core/playback'
 
 const root = resolve(import.meta.dirname, '..')
 
@@ -18,10 +23,12 @@ async function loadMainModules() {
   const pcmUrl = pathToFileURL(resolve(root, 'src/main/ffmpeg/pcm.ts')).href
   const probeUrl = pathToFileURL(resolve(root, 'src/main/ffmpeg/probe.ts')).href
   const waveformUrl = pathToFileURL(resolve(root, 'src/main/ffmpeg/waveform.ts')).href
+  const playbackUrl = pathToFileURL(resolve(root, 'src/main/analysis/playback-chunk.ts')).href
   const pcm = await import(pcmUrl)
   const probe = await import(probeUrl)
   const waveform = await import(waveformUrl)
-  return { pcm, probe, waveform }
+  const playback = await import(playbackUrl)
+  return { pcm, probe, waveform, playback }
 }
 
 type Check = { name: string; pass: boolean; detail: string }
@@ -61,7 +68,7 @@ function syntheticPcm(
 }
 
 async function main(): Promise<void> {
-  const { pcm, probe, waveform } = await loadMainModules()
+  const { pcm, probe, waveform, playback } = await loadMainModules()
   const fixtures = resolve(root, 'test/fixtures')
 
   // --- time helpers ---
@@ -79,6 +86,33 @@ async function main(): Promise<void> {
     'secondsToTimecode',
     secondsToTimecode(65, 25) === '00:01:05:00',
     '65 s @ 25 fps → 00:01:05:00'
+  )
+
+  const playbackSegments = [
+    {
+      sourceStartSeconds: 0,
+      sourceEndSeconds: 2,
+      timelineStartSeconds: 0,
+      timelineEndSeconds: 2
+    },
+    {
+      sourceStartSeconds: 5,
+      sourceEndSeconds: 8,
+      timelineStartSeconds: 2,
+      timelineEndSeconds: 5
+    }
+  ]
+  const playbackRanges = buildCutPlaybackRanges(playbackSegments, 1.5, 2)
+  record(
+    'cut playback — timeline maps across removed silence',
+    cutTimelineDuration(playbackSegments) === 5 &&
+      timelineTimeToSourceTime(playbackSegments, 2.5) === 5.5 &&
+      playbackRanges.length === 2 &&
+      playbackRanges[0].sourceStartSeconds === 1.5 &&
+      playbackRanges[0].sourceEndSeconds === 2 &&
+      playbackRanges[1].sourceStartSeconds === 5 &&
+      playbackRanges[1].sourceEndSeconds === 6.5,
+    '1.5–3.5 s montage → 1.5–2 s puis 5–6.5 s source'
   )
 
   const hopWindows = computeRmsWindows(new Float32Array(100), 1000)
@@ -171,6 +205,35 @@ async function main(): Promise<void> {
           single.durationSeconds
       ) < 0.05,
     `segments=${singleSegments.length}, kept=${singlePreview.keptDurationSeconds.toFixed(2)}s`
+  )
+  const playbackChunk = await playback.buildPlaybackChunk(
+    singlePath,
+    single.durationSeconds,
+    single.audioStreams.map((stream) => stream.index),
+    [
+      {
+        sourceStartSeconds: 0,
+        sourceEndSeconds: 0.75,
+        timelineStartSeconds: 0,
+        timelineEndSeconds: 0.75
+      },
+      {
+        sourceStartSeconds: 1.25,
+        sourceEndSeconds: 2.75,
+        timelineStartSeconds: 0.75,
+        timelineEndSeconds: 2.25
+      }
+    ],
+    0.5,
+    1
+  )
+  record(
+    'single-track.mp4 — cut preview PCM chunk',
+    playbackChunk.sampleRate === 16000 &&
+      playbackChunk.samples.byteLength === 16000 * Float32Array.BYTES_PER_ELEMENT &&
+      Math.abs(playbackChunk.durationSeconds - 1) < 1 / 16000 &&
+      playbackChunk.ended === false,
+    `duration=${playbackChunk.durationSeconds.toFixed(2)}s, bytes=${playbackChunk.samples.byteLength}`
   )
 
   // --- param change recomputes segments ---

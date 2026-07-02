@@ -10,6 +10,7 @@ import {
 } from '@core/presets'
 import { defaultAnalysisTrackIndices } from '@core/media/default-analysis-tracks'
 import TimelinePreview from './components/TimelinePreview'
+import AudioCutPreview from './components/AudioCutPreview'
 import {
   audioTrackLabel,
   formatDuration,
@@ -360,6 +361,12 @@ export default function App() {
                   Zones vertes : passages conservés. Zones roses : silences coupés. Même découpage
                   que l&apos;export XML ({keepSegments.length} segment{keepSegments.length !== 1 ? 's' : ''}).
                 </p>
+                <AudioCutPreview
+                  filePath={media.filePath}
+                  mediaDurationSeconds={media.durationSeconds}
+                  audioStreamIndices={selectedTracks}
+                  keepSegments={keepSegments}
+                />
                 <TimelinePreview
                   data={preview}
                   durationSeconds={media?.durationSeconds ?? preview.waveform.durationSeconds}
