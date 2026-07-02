@@ -2,7 +2,13 @@
 
 Fixtures are local MP4 files used to validate probe, track selection, VFR warnings, and later XML export. They are **not** committed to the repository (binary media).
 
-Place files in this directory:
+Generate the synthetic fixtures used by the automated suite:
+
+```bash
+npm run fixtures
+```
+
+This creates the following local files, which remain ignored by Git:
 
 ```
 test/fixtures/

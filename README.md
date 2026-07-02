@@ -119,6 +119,7 @@ The installer and update metadata are generated in `dist/`.
 | `npm run test:timebolt` | Compare detection against machine-local TimeBolt references |
 | `npm run build` | Build the production Electron application |
 | `npm run icons` | Generate PNG and ICO assets from the SVG source |
+| `npm run fixtures` | Generate synthetic local MP4 regression fixtures |
 | `npm run dist` | Build the x64 Windows NSIS installer |
 
 ---

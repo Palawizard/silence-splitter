@@ -11,6 +11,7 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "icons": "tsx scripts/generate-icons.ts",
+    "fixtures": "tsx scripts/generate-test-fixtures.ts",
     "dist": "npm run icons && npm run build && electron-builder --win nsis",
     "dist:publish": "npm run icons && npm run build && electron-builder --win nsis --publish always",
     "preview": "electron-vite preview",

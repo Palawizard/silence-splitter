@@ -22,6 +22,7 @@ jobs:
       - name: Install ffmpeg
         run: choco install ffmpeg --no-progress --yes
       - run: npm ci
+      - run: npm run fixtures
       - name: Verify tag matches package version
         shell: pwsh
         run: |
