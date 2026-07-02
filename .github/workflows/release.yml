@@ -32,6 +32,19 @@ jobs:
           }
       - run: npm run typecheck
       - run: npm test
-      - run: npm run dist:publish
+      - run: npm run dist
+      - name: Publish prerelease assets
+        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          gh release create "v$version" `
+            "dist/Silence-Splitter-$version-x64-setup.exe" `
+            "dist/Silence-Splitter-$version-x64-setup.exe.blockmap" `
+            "dist/latest.yml" `
+            --repo "${{ github.repository }}" `
+            --target main `
+            --title "$version" `
+            --generate-notes `
+            --prerelease
