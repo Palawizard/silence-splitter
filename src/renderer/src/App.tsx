@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Settings } from 'lucide-react'
 import type { KeepSegment } from '@core/models/keep-segment'
 import type { MediaInfo } from '@core/models/media-info'
@@ -10,8 +10,12 @@ import {
   type DetectionParams
 } from '@core/presets'
 import { defaultAnalysisTrackIndices } from '@core/media/default-analysis-tracks'
+import { useI18n } from './context/I18nProvider'
 import { useSettings } from './context/SettingsProvider'
+import { getPresetLabel } from './i18n'
+import SettingsModal from './components/SettingsModal'
 import TimelinePreview from './components/TimelinePreview'
+import WelcomeModal from './components/WelcomeModal'
 import {
   audioTrackLabel,
   formatDuration,
@@ -26,20 +30,11 @@ type TimelineExportNle = 'resolve' | 'premiere'
 type ResolveTimelineFormat = 'otio' | 'xml'
 type PremiereTimelineFormat = 'otio' | 'xml'
 
-const PARAM_FIELDS: {
-  key: keyof DetectionParams
-  label: string
-  step: number
-  min: number
-}[] = [
-  { key: 'removeSilencesLongerThanSeconds', label: 'Couper les silences plus longs que', step: 0.05, min: 0.05 },
-  { key: 'ignoreDetectionsShorterThanSeconds', label: 'Ignorer les détections plus courtes que', step: 0.05, min: 0.05 },
-  { key: 'leftPaddingSeconds', label: 'Marge avant la parole', step: 0.01, min: 0 },
-  { key: 'rightPaddingSeconds', label: 'Marge après la parole', step: 0.01, min: 0 }
-]
-
 export default function App() {
+  const { locale, t } = useI18n()
   const { settings, updateSettings } = useSettings()
+  const [showSettings, setShowSettings] = useState(false)
+  const [welcomeDismissed, setWelcomeDismissed] = useState(settings.firstRunComplete)
   const [ffmpegOk, setFfmpegOk] = useState(true)
   const [media, setMedia] = useState<MediaInfo | null>(null)
   const [selectedTracks, setSelectedTracks] = useState<number[]>([])
@@ -60,6 +55,26 @@ export default function App() {
   )
   const [exportedPath, setExportedPath] = useState<string | null>(null)
   const [exportedAudioDirectory, setExportedAudioDirectory] = useState<string | null>(null)
+
+  const paramFields = useMemo(
+    () =>
+      [
+        { key: 'removeSilencesLongerThanSeconds' as const, labelKey: 'detection.paramRemoveSilence' },
+        { key: 'ignoreDetectionsShorterThanSeconds' as const, labelKey: 'detection.paramIgnoreShort' },
+        { key: 'leftPaddingSeconds' as const, labelKey: 'detection.paramLeftPadding' },
+        { key: 'rightPaddingSeconds' as const, labelKey: 'detection.paramRightPadding' }
+      ].map((field) => ({
+        ...field,
+        label: t(field.labelKey),
+        step: field.key.includes('Padding') ? 0.01 : field.key === 'removeSilencesLongerThanSeconds' ? 0.05 : 0.05,
+        min: field.key.includes('Padding') ? 0 : 0.05
+      })),
+    [t]
+  )
+
+  useEffect(() => {
+    setWelcomeDismissed(settings.firstRunComplete)
+  }, [settings.firstRunComplete])
 
   useEffect(() => {
     setExportNle(settings.exportNle)
@@ -103,12 +118,10 @@ export default function App() {
         setPreview(null)
         setFilterBelowDb(null)
         setLoadState('error')
-        setErrorMessage(
-          err instanceof Error ? err.message : 'Impossible de détecter les silences.'
-        )
+        setErrorMessage(err instanceof Error ? err.message : t('errors.detectSilences'))
       }
     },
-    []
+    [t]
   )
 
   const requestWaveformWindow = useCallback(
@@ -152,12 +165,10 @@ export default function App() {
         setMedia(null)
         setSelectedTracks([])
         setLoadState('error')
-        setErrorMessage(
-          err instanceof Error ? err.message : "Impossible d'analyser le fichier."
-        )
+        setErrorMessage(err instanceof Error ? err.message : t('errors.probeFile'))
       }
     },
-    []
+    [t]
   )
 
   useEffect(() => {
@@ -227,44 +238,51 @@ export default function App() {
       setExportState('success')
     } catch {
       setExportState('idle')
-      setErrorMessage("Impossible d'exporter la timeline.")
+      setErrorMessage(t('errors.exportTimeline'))
     }
   }
 
   const exportButtonLabel =
     exportState === 'exporting'
-      ? 'Export en cours…'
+      ? t('export.inProgress')
       : exportNle === 'resolve'
-        ? 'Exporter pour DaVinci Resolve'
-        : 'Exporter pour Premiere Pro'
+        ? t('export.buttonResolve')
+        : t('export.buttonPremiere')
 
   const exportSuccessNleLabel =
-    exportNle === 'resolve' ? 'Timeline Resolve enregistrée' : 'Timeline Premiere enregistrée'
+    exportNle === 'resolve' ? t('export.successResolve') : t('export.successPremiere')
 
   const isLoading = loadState === 'probing' || loadState === 'detecting'
   const showVfrWarning = media?.video?.isVariableFrameRate === true
+  const showWelcome = !settings.firstRunComplete && !welcomeDismissed
+
+  if (showWelcome) {
+    return <WelcomeModal onComplete={() => setWelcomeDismissed(true)} />
+  }
 
   return (
     <div className="app">
       <header className="app-header">
         <div className="app-header-text">
-          <h1>Silence Splitter</h1>
-          <p className="subtitle">Détecte les silences et exporte une timeline pour le montage.</p>
+          <h1>{t('app.title')}</h1>
+          <p className="subtitle">{t('app.subtitle')}</p>
         </div>
         <button
           type="button"
           className="btn settings-entry"
-          aria-label="Paramètres"
-          title="Paramètres"
-          disabled
+          aria-label={t('settings.title')}
+          title={t('settings.title')}
+          onClick={() => setShowSettings(true)}
         >
           <Settings size={18} strokeWidth={2} aria-hidden />
         </button>
       </header>
 
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+
       {!ffmpegOk && (
         <div className="banner" role="alert">
-          ffmpeg et ffprobe sont requis. Installez-les et relancez l&apos;application.
+          {t('ffmpeg.missing')}
         </div>
       )}
 
@@ -275,7 +293,7 @@ export default function App() {
       )}
 
       <section className="card">
-        <h2>Vidéo source</h2>
+        <h2>{t('source.title')}</h2>
         <div className="actions">
           <button
             type="button"
@@ -283,38 +301,38 @@ export default function App() {
             onClick={handleSelectFile}
             disabled={!ffmpegOk || isLoading}
           >
-            Choisir un fichier MP4
+            {t('source.chooseFile')}
           </button>
         </div>
         {media && <p className="file-name">{media.filePath}</p>}
         {isLoading && (
           <p className="status">
-            {loadState === 'detecting' ? 'Détection des silences…' : 'Analyse en cours…'}
+            {loadState === 'detecting' ? t('source.detecting') : t('source.analyzing')}
           </p>
         )}
       </section>
 
       {!media && ffmpegOk && loadState === 'idle' && (
         <section className="card card-empty">
-          <p className="muted">Choisissez un fichier MP4 pour commencer l&apos;analyse.</p>
+          <p className="muted">{t('source.emptyHint')}</p>
         </section>
       )}
 
       {media && (
         <>
           <section className="card">
-            <h2>Informations</h2>
+            <h2>{t('info.title')}</h2>
             <dl className="meta-grid">
               <div>
-                <dt>Durée</dt>
-                <dd>{formatDuration(media.durationSeconds)}</dd>
+                <dt>{t('info.duration')}</dt>
+                <dd>{formatDuration(media.durationSeconds, locale)}</dd>
               </div>
               <div>
-                <dt>Images par seconde</dt>
-                <dd>{media.video ? formatFrameRate(media.video.frameRate) : '—'}</dd>
+                <dt>{t('info.frameRate')}</dt>
+                <dd>{media.video ? formatFrameRate(media.video.frameRate, locale) : '—'}</dd>
               </div>
               <div>
-                <dt>Résolution</dt>
+                <dt>{t('info.resolution')}</dt>
                 <dd>
                   {media.video
                     ? formatResolution(media.video.width, media.video.height)
@@ -324,20 +342,16 @@ export default function App() {
             </dl>
             {showVfrWarning && (
               <div className="banner banner-warning" role="status">
-                Images par seconde variables détectées. L&apos;export XML pourra nécessiter une
-                vérification dans votre logiciel de montage.
+                {t('info.vfrWarning')}
               </div>
             )}
           </section>
 
           <section className="card">
-            <h2>Pistes audio pour l&apos;analyse</h2>
-            <p className="hint">
-              Les pistes cochées sont mélangées pour la détection des silences. La vidéo source
-              reste inchangée à l&apos;export.
-            </p>
+            <h2>{t('tracks.title')}</h2>
+            <p className="hint">{t('tracks.hint')}</p>
             {media.audioStreams.length === 0 ? (
-              <p className="muted">Aucune piste audio trouvée.</p>
+              <p className="muted">{t('tracks.none')}</p>
             ) : (
               <ul className="track-list">
                 {media.audioStreams.map((stream, ordinal) => (
@@ -351,6 +365,7 @@ export default function App() {
                       />
                       <span>
                         {audioTrackLabel(
+                          locale,
                           ordinal + 1,
                           stream.codec,
                           stream.channels,
@@ -368,9 +383,9 @@ export default function App() {
 
           {selectedTracks.length > 0 && (
             <section className="card">
-              <h2>Détection des silences</h2>
+              <h2>{t('detection.title')}</h2>
               <div className="field">
-                <label htmlFor="preset-select">Préréglage</label>
+                <label htmlFor="preset-select">{t('detection.preset')}</label>
                 <select
                   id="preset-select"
                   className="select"
@@ -380,16 +395,18 @@ export default function App() {
                 >
                   {PRESETS.map((preset) => (
                     <option key={preset.id} value={preset.id}>
-                      {preset.label}
+                      {getPresetLabel(locale, preset.id)}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div className="param-grid">
-                {PARAM_FIELDS.map((field) => (
+                {paramFields.map((field) => (
                   <div key={field.key} className="field">
-                    <label htmlFor={field.key}>{field.label} (s)</label>
+                    <label htmlFor={field.key}>
+                      {field.label} {t('detection.secondsSuffix')}
+                    </label>
                     <input
                       id={field.key}
                       type="number"
@@ -409,10 +426,9 @@ export default function App() {
           {preview && loadState === 'ready' && (
             <>
               <section className="card card-wide">
-                <h2>Aperçu timeline</h2>
+                <h2>{t('preview.title')}</h2>
                 <p className="hint">
-                  Zones vertes : passages conservés. Zones roses : silences coupés. Même découpage
-                  que l&apos;export ({keepSegments.length} segment{keepSegments.length !== 1 ? 's' : ''}).
+                  {t('preview.hint', { count: keepSegments.length })}
                 </p>
                 <TimelinePreview
                   data={preview}
@@ -426,13 +442,10 @@ export default function App() {
               </section>
 
               <section className="card">
-                <h2>Exporter</h2>
-                <p className="hint">
-                  Copie chaque piste audio sans réencodage. Conservez la timeline et son dossier
-                  audio ensemble. La vidéo source reste inchangée.
-                </p>
+                <h2>{t('export.title')}</h2>
+                <p className="hint">{t('export.hint')}</p>
                 <div className="field">
-                  <label htmlFor="export-nle">Logiciel de montage</label>
+                  <label htmlFor="export-nle">{t('export.nle')}</label>
                   <select
                     id="export-nle"
                     className="select"
@@ -444,13 +457,13 @@ export default function App() {
                     }}
                     disabled={exportState === 'exporting'}
                   >
-                    <option value="resolve">DaVinci Resolve</option>
-                    <option value="premiere">Premiere Pro</option>
+                    <option value="resolve">{t('export.resolve')}</option>
+                    <option value="premiere">{t('export.premiere')}</option>
                   </select>
                 </div>
                 {exportNle === 'resolve' && (
                   <div className="field">
-                    <label htmlFor="resolve-format">Format Resolve</label>
+                    <label htmlFor="resolve-format">{t('export.resolveFormat')}</label>
                     <select
                       id="resolve-format"
                       className="select"
@@ -462,14 +475,14 @@ export default function App() {
                       }}
                       disabled={exportState === 'exporting'}
                     >
-                      <option value="otio">OTIO — recommandé, import rapide</option>
-                      <option value="xml">XML — compatibilité</option>
+                      <option value="otio">{t('export.otioResolve')}</option>
+                      <option value="xml">{t('export.xmlResolve')}</option>
                     </select>
                   </div>
                 )}
                 {exportNle === 'premiere' && (
                   <div className="field">
-                    <label htmlFor="premiere-format">Format Premiere</label>
+                    <label htmlFor="premiere-format">{t('export.premiereFormat')}</label>
                     <select
                       id="premiere-format"
                       className="select"
@@ -481,8 +494,8 @@ export default function App() {
                       }}
                       disabled={exportState === 'exporting'}
                     >
-                      <option value="otio">OTIO — recommandé, pistes stéréo natives</option>
-                      <option value="xml">XML — compatibilité (pistes mono G/D)</option>
+                      <option value="otio">{t('export.otioPremiere')}</option>
+                      <option value="xml">{t('export.xmlPremiere')}</option>
                     </select>
                   </div>
                 )}
@@ -500,7 +513,7 @@ export default function App() {
                     {exportedAudioDirectory && (
                       <>
                         <br />
-                        Pistes audio : <span>{exportedAudioDirectory}</span>
+                        {t('export.audioTracks')} : <span>{exportedAudioDirectory}</span>
                       </>
                     )}
                   </p>

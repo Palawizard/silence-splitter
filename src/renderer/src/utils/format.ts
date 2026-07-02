@@ -1,6 +1,11 @@
-export function formatDuration(seconds: number): string {
+import type { AppLocale } from '@core/settings'
+import { translate } from '../i18n'
+
+const EM_DASH = '—'
+
+export function formatDuration(seconds: number, locale: AppLocale): string {
   if (!Number.isFinite(seconds) || seconds <= 0) {
-    return '0 s'
+    return translate(locale, 'format.durationSeconds', { value: 0 })
   }
 
   const totalSeconds = Math.round(seconds)
@@ -9,33 +14,34 @@ export function formatDuration(seconds: number): string {
   const secs = totalSeconds % 60
 
   if (hours > 0) {
-    return `${hours} h ${minutes} min ${secs} s`
+    return translate(locale, 'format.durationHours', { hours, minutes, seconds: secs })
   }
 
   if (minutes > 0) {
-    return `${minutes} min ${secs} s`
+    return translate(locale, 'format.durationMinutes', { minutes, seconds: secs })
   }
 
-  return `${secs} s`
+  return translate(locale, 'format.durationSeconds', { value: secs })
 }
 
-export function formatFrameRate(fps: number): string {
+export function formatFrameRate(fps: number, locale: AppLocale): string {
   if (!Number.isFinite(fps) || fps <= 0) {
-    return '—'
+    return EM_DASH
   }
 
-  return `${fps.toFixed(2)} ips`
+  return translate(locale, 'format.frameRate', { fps: fps.toFixed(2) })
 }
 
 export function formatResolution(width: number, height: number): string {
   if (width <= 0 || height <= 0) {
-    return '—'
+    return EM_DASH
   }
 
   return `${width} × ${height}`
 }
 
 export function audioTrackLabel(
+  locale: AppLocale,
   ordinal: number,
   codec: string,
   channels: number,
@@ -43,14 +49,22 @@ export function audioTrackLabel(
   title?: string,
   bitRate?: number
 ): string {
-  const parts = [`Piste ${ordinal}`, codec, `${channels} can.`]
+  const channelLabel = translate(locale, 'format.channels', { count: channels })
+  const extraParts: string[] = []
+
   if (bitRate !== undefined && bitRate > 0) {
-    parts.push(`${Math.round(bitRate / 1000)} kbps`)
+    extraParts.push(`${Math.round(bitRate / 1000)} kbps`)
   }
   if (title) {
-    parts.push(title)
+    extraParts.push(title)
   } else if (language) {
-    parts.push(language.toUpperCase())
+    extraParts.push(language.toUpperCase())
   }
-  return parts.join(' · ')
+
+  return translate(locale, 'tracks.label', {
+    ordinal,
+    codec,
+    channels: channelLabel,
+    extra: extraParts.length > 0 ? extraParts.join(' · ') : EM_DASH
+  })
 }
