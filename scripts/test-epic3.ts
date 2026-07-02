@@ -8,7 +8,7 @@ import type { MediaInfo } from '../src/core/models/media-info'
 import {
   ensureOtioExtension,
   ensureXmlExtension,
-  writeResolveTimeline,
+  writeResolveOtio,
   writeResolveXml
 } from '../src/main/export/resolve-xml'
 import { probeMedia } from '../src/main/ffmpeg/probe'
@@ -350,7 +350,7 @@ async function testFileWriting(): Promise<void> {
     assert.match(writtenXml, /<sequence id="sequence-1">/)
     assert.match(writtenXml, /<clipitem id="audio-track-2-clip-1">/)
 
-    const optimized = await writeResolveTimeline(
+    const optimized = await writeResolveOtio(
       join(temporaryDirectory, 'optimized'),
       fixtureMedia,
       [
@@ -363,7 +363,6 @@ async function testFileWriting(): Promise<void> {
       ]
     )
     assert.equal(optimized.otioPath, join(temporaryDirectory, 'optimized.otio'))
-    assert.equal(optimized.xmlPath, join(temporaryDirectory, 'optimized.xml'))
     const writtenOtio = JSON.parse(await readFile(optimized.otioPath!, 'utf8')) as {
       OTIO_SCHEMA: string
     }

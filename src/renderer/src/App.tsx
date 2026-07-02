@@ -21,6 +21,7 @@ import './styles/app.css'
 
 type LoadState = 'idle' | 'probing' | 'waveform' | 'detecting' | 'ready' | 'error'
 type ExportState = 'idle' | 'exporting' | 'success'
+type ResolveExportFormat = 'otio' | 'xml'
 
 const PARAM_FIELDS: {
   key: keyof DetectionParams
@@ -46,8 +47,8 @@ export default function App() {
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [exportState, setExportState] = useState<ExportState>('idle')
+  const [resolveExportFormat, setResolveExportFormat] = useState<ResolveExportFormat>('otio')
   const [exportedPath, setExportedPath] = useState<string | null>(null)
-  const [exportedFallbackPath, setExportedFallbackPath] = useState<string | null>(null)
   const [exportedAudioDirectory, setExportedAudioDirectory] = useState<string | null>(null)
 
   useEffect(() => {
@@ -190,18 +191,20 @@ export default function App() {
 
     setExportState('exporting')
     setExportedPath(null)
-    setExportedFallbackPath(null)
     setExportedAudioDirectory(null)
     setErrorMessage(null)
     try {
-      const result = await window.api.exportResolveXml({ media, keepSegments })
+      const result = await window.api.exportResolveXml({
+        media,
+        keepSegments,
+        format: resolveExportFormat
+      })
       if (result.canceled) {
         setExportState('idle')
         return
       }
 
       setExportedPath(result.filePath ?? null)
-      setExportedFallbackPath(result.fallbackXmlPath ?? null)
       setExportedAudioDirectory(result.audioDirectoryPath ?? null)
       setExportState('success')
     } catch {
@@ -362,7 +365,7 @@ export default function App() {
                 <h2>Aperçu timeline</h2>
                 <p className="hint">
                   Zones vertes : passages conservés. Zones roses : silences coupés. Même découpage
-                  que l&apos;export XML ({keepSegments.length} segment{keepSegments.length !== 1 ? 's' : ''}).
+                  que l&apos;export ({keepSegments.length} segment{keepSegments.length !== 1 ? 's' : ''}).
                 </p>
                 <AudioCutPreview
                   filePath={media.filePath}
@@ -381,10 +384,24 @@ export default function App() {
               <section className="card">
                 <h2>Exporter</h2>
                 <p className="hint">
-                  Crée une timeline Resolve rapide à importer et copie chaque piste audio sans
-                  réencodage. Conservez tous les fichiers exportés ensemble. La vidéo source reste
-                  inchangée.
+                  Copie chaque piste audio sans réencodage. Conservez la timeline et son dossier
+                  audio ensemble. La vidéo source reste inchangée.
                 </p>
+                <div className="field">
+                  <label htmlFor="resolve-format">Format</label>
+                  <select
+                    id="resolve-format"
+                    className="select"
+                    value={resolveExportFormat}
+                    onChange={(event) =>
+                      setResolveExportFormat(event.target.value as ResolveExportFormat)
+                    }
+                    disabled={exportState === 'exporting'}
+                  >
+                    <option value="otio">OTIO — recommandé, import rapide</option>
+                    <option value="xml">XML — compatibilité</option>
+                  </select>
+                </div>
                 <button
                   type="button"
                   className="btn btn-primary"
@@ -398,12 +415,6 @@ export default function App() {
                 {exportState === 'success' && exportedPath && (
                   <p className="export-success" role="status">
                     Timeline Resolve enregistrée : <span>{exportedPath}</span>
-                    {exportedFallbackPath && (
-                      <>
-                        <br />
-                        XML de secours : <span>{exportedFallbackPath}</span>
-                      </>
-                    )}
                     {exportedAudioDirectory && (
                       <>
                         <br />

@@ -11,7 +11,7 @@ import { buildPlaybackChunk } from '../analysis/playback-chunk'
 import { checkFfmpegAvailable } from '../ffmpeg/check'
 import { probeMedia } from '../ffmpeg/probe'
 import { extractWaveformEnvelope } from '../ffmpeg/waveform'
-import { writeResolveTimeline } from '../export/resolve-xml'
+import { writeResolveOtio, writeResolveXml } from '../export/resolve-xml'
 
 export function registerIpcHandlers(): void {
   ipcMain.handle('app:check-ffmpeg', () => checkFfmpegAvailable())
@@ -124,14 +124,25 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(
     'export:resolve-xml',
-    async (_event, payload: { media: MediaInfo; keepSegments: KeepSegment[] }) => {
+    async (
+      _event,
+      payload: { media: MediaInfo; keepSegments: KeepSegment[]; format: 'otio' | 'xml' }
+    ) => {
       const window = BrowserWindow.getFocusedWindow()
       const sourceName = parse(payload.media.filePath).name
+      const isOtio = payload.format === 'otio'
       const options: SaveDialogOptions = {
         title: 'Exporter pour DaVinci Resolve',
         buttonLabel: 'Enregistrer',
-        defaultPath: join(parse(payload.media.filePath).dir, `${sourceName}-resolve.otio`),
-        filters: [{ name: 'Timeline Resolve', extensions: ['otio'] }]
+        defaultPath: join(
+          parse(payload.media.filePath).dir,
+          `${sourceName}-resolve.${isOtio ? 'otio' : 'xml'}`
+        ),
+        filters: [
+          isOtio
+            ? { name: 'Timeline Resolve OTIO', extensions: ['otio'] }
+            : { name: 'Timeline Resolve XML', extensions: ['xml'] }
+        ]
       }
       const result = window
         ? await dialog.showSaveDialog(window, options)
@@ -141,11 +152,19 @@ export function registerIpcHandlers(): void {
         return { canceled: true }
       }
 
-      const files = await writeResolveTimeline(result.filePath, payload.media, payload.keepSegments)
+      if (isOtio) {
+        const files = await writeResolveOtio(result.filePath, payload.media, payload.keepSegments)
+        return {
+          canceled: false,
+          filePath: files.otioPath,
+          audioDirectoryPath: files.audioDirectoryPath
+        }
+      }
+
+      const files = await writeResolveXml(result.filePath, payload.media, payload.keepSegments)
       return {
         canceled: false,
-        filePath: files.otioPath,
-        fallbackXmlPath: files.xmlPath,
+        filePath: files.xmlPath,
         audioDirectoryPath: files.audioDirectoryPath
       }
     }

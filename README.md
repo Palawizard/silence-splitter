@@ -4,7 +4,7 @@ Application locale qui analyse l'audio d'une vidéo MP4, détecte les silences e
 
 L'aperçu permet de lire le montage détecté, de se déplacer dans sa timeline et d'écouter le mix des pistes sélectionnées sans rendre de nouveau fichier audio.
 
-L'export Resolve crée une timeline OTIO rapide à importer, un XML de secours et un dossier de pistes audio annexes remuxées sans réencodage. Conservez ces fichiers ensemble pour préserver tous les flux audio du MP4.
+L'export Resolve permet de choisir une timeline OTIO rapide à importer ou un XML de compatibilité. Il crée aussi un dossier de pistes audio annexes remuxées sans réencodage. Conservez la timeline choisie et ce dossier ensemble pour préserver tous les flux audio du MP4.
 
 ## Stack
 

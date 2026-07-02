@@ -5,11 +5,12 @@ import { generateResolveOtio, generateResolveXml } from '@core/export/resolve'
 import { writeFile } from 'node:fs/promises'
 import { prepareAudioSidecars } from './audio-sidecars'
 
-export type ResolveExportFiles = {
-  xmlPath: string
-  otioPath?: string
+type ResolveExportFiles = {
   audioDirectoryPath?: string
 }
+
+export type ResolveXmlExportFiles = ResolveExportFiles & { xmlPath: string }
+export type ResolveOtioExportFiles = ResolveExportFiles & { otioPath: string }
 
 export function ensureXmlExtension(filePath: string): string {
   return filePath.toLowerCase().endsWith('.xml') ? filePath : `${filePath}.xml`
@@ -19,27 +20,23 @@ export function ensureOtioExtension(filePath: string): string {
   return filePath.toLowerCase().endsWith('.otio') ? filePath : `${filePath}.otio`
 }
 
-export async function writeResolveTimeline(
+export async function writeResolveOtio(
   outputPath: string,
   media: MediaInfo,
   keepSegments: KeepSegment[]
-): Promise<ResolveExportFiles> {
+): Promise<ResolveOtioExportFiles> {
   const otioPath = ensureOtioExtension(outputPath)
-  const xmlPath = `${otioPath.slice(0, -'.otio'.length)}.xml`
   const preparedAudio = await prepareAudioSidecars(otioPath, media)
   const model = buildTimelineExportModel(media, keepSegments, undefined, preparedAudio.sidecars)
-  await Promise.all([
-    writeFile(otioPath, generateResolveOtio(model), 'utf8'),
-    writeFile(xmlPath, generateResolveXml(model), 'utf8')
-  ])
-  return { otioPath, xmlPath, audioDirectoryPath: preparedAudio.directoryPath }
+  await writeFile(otioPath, generateResolveOtio(model), 'utf8')
+  return { otioPath, audioDirectoryPath: preparedAudio.directoryPath }
 }
 
 export async function writeResolveXml(
   outputPath: string,
   media: MediaInfo,
   keepSegments: KeepSegment[]
-): Promise<ResolveExportFiles> {
+): Promise<ResolveXmlExportFiles> {
   const finalPath = ensureXmlExtension(outputPath)
   const preparedAudio = await prepareAudioSidecars(finalPath, media)
   const model = buildTimelineExportModel(

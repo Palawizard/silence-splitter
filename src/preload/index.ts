@@ -54,12 +54,12 @@ export type PlaybackChunkResponse = {
 export type ResolveExportRequest = {
   media: MediaInfo
   keepSegments: KeepSegment[]
+  format: 'otio' | 'xml'
 }
 
 export type ResolveExportResponse = {
   canceled: boolean
   filePath?: string
-  fallbackXmlPath?: string
   audioDirectoryPath?: string
 }
 
