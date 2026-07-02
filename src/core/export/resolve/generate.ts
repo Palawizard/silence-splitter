@@ -1,33 +1,12 @@
 import type { TimelineExportModel } from '../types'
 import {
+  audioPanFilterXml,
   audioSourceFileXml,
   escapeXml,
   linksXml,
   rateXml,
-  sourceFileXml,
   videoClipXml
 } from '../xmeml/common'
-
-function audioPanFilterXml(pan: number, indentation: string): string[] {
-  return [
-    `${indentation}<filter>`,
-    `${indentation}  <enabled>TRUE</enabled>`,
-    `${indentation}  <effect>`,
-    `${indentation}    <name>Audio Pan</name>`,
-    `${indentation}    <effectid>audiopan</effectid>`,
-    `${indentation}    <effecttype>audiopan</effecttype>`,
-    `${indentation}    <mediatype>audio</mediatype>`,
-    `${indentation}    <parameter>`,
-    `${indentation}      <name>Pan</name>`,
-    `${indentation}      <parameterid>pan</parameterid>`,
-    `${indentation}      <value>${pan}</value>`,
-    `${indentation}      <valuemin>-1</valuemin>`,
-    `${indentation}      <valuemax>1</valuemax>`,
-    `${indentation}    </parameter>`,
-    `${indentation}  </effect>`,
-    `${indentation}</filter>`
-  ]
-}
 
 function audioClipXml(
   model: TimelineExportModel,

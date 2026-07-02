@@ -1,6 +1,7 @@
 import type { TimelineExportModel } from '../types'
 import { premiereFilePathToUrl } from '../resolve/path-url'
 import {
+  audioPanFilterXml,
   audioSourceFileXml,
   escapeXml,
   linksXml,
@@ -20,6 +21,7 @@ function audioClipXml(
     (source) => source.sourceStreamIndex === audioTrack.sourceStreamIndex
   )
   const audioSource = model.source.audioSources[audioSourceIndex]
+  const pan = audioTrack.sourceChannelIndex === 1 ? -1 : 1
   const sourceInFrame = segment.sourceInFrame + audioSource.sourceFrameOffset
   const sourceOutFrame = segment.sourceOutFrame + audioSource.sourceFrameOffset
 
@@ -39,6 +41,9 @@ function audioClipXml(
     `${indentation}    <mediatype>audio</mediatype>`,
     `${indentation}    <trackindex>${audioTrack.sourceTrackIndex}</trackindex>`,
     `${indentation}  </sourcetrack>`,
+    ...(audioSource.channels === 2
+      ? audioPanFilterXml(pan, `${indentation}  `, true)
+      : []),
     ...linksXml(model, segment.index, `${indentation}  `),
     `${indentation}</clipitem>`
   ]
@@ -91,7 +96,7 @@ function audioTimelineXml(model: TimelineExportModel, indentation: string): stri
   return lines
 }
 
-/** FCP7 xmeml tuned for Premiere Pro import — track output routing, no Resolve pan filters. */
+/** FCP7 xmeml tuned for Premiere Pro import — localhost paths and per-clip pan filters. */
 export function generatePremiereXml(model: TimelineExportModel): string {
   const lines = [
     '<?xml version="1.0" encoding="UTF-8"?>',

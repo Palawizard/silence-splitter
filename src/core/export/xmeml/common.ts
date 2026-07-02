@@ -10,6 +10,34 @@ export function escapeXml(value: string): string {
     .replaceAll("'", '&apos;')
 }
 
+export function audioPanFilterXml(
+  pan: number,
+  indentation: string,
+  includeEffectCategory = false
+): string[] {
+  return [
+    `${indentation}<filter>`,
+    `${indentation}  <enabled>TRUE</enabled>`,
+    `${indentation}  <effect>`,
+    `${indentation}    <name>Audio Pan</name>`,
+    `${indentation}    <effectid>audiopan</effectid>`,
+    `${indentation}    <effecttype>audiopan</effecttype>`,
+    `${indentation}    <mediatype>audio</mediatype>`,
+    ...(includeEffectCategory
+      ? [`${indentation}    <effectcategory>audiopan</effectcategory>`]
+      : []),
+    `${indentation}    <parameter>`,
+    `${indentation}      <name>Pan</name>`,
+    `${indentation}      <parameterid>pan</parameterid>`,
+    `${indentation}      <value>${pan}</value>`,
+    `${indentation}      <valuemin>-1</valuemin>`,
+    `${indentation}      <valuemax>1</valuemax>`,
+    `${indentation}    </parameter>`,
+    `${indentation}  </effect>`,
+    `${indentation}</filter>`
+  ]
+}
+
 export function rateXml(rate: TimelineRate, indentation: string): string[] {
   return [
     `${indentation}<rate>`,

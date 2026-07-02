@@ -88,8 +88,15 @@ assert.deepEqual(
   [...premiereXml.matchAll(/<outputchannelindex>(\d)<\/outputchannelindex>/g)].map((match) => match[1]),
   ['1', '2']
 )
-assert.equal(premiereXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 0)
+assert.equal(premiereXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 4)
 assert.equal(resolveXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 4)
+assert.match(premiereXml, /<effectcategory>audiopan<\/effectcategory>/)
+assert.deepEqual(
+  [...premiereXml.matchAll(/<parameterid>pan<\/parameterid>\s*<value>(-?1)<\/value>/g)].map(
+    (match) => match[1]
+  ),
+  ['-1', '-1', '1', '1']
+)
 assert.match(premiereXml, /<numOutputChannels>2<\/numOutputChannels>/)
 assert.equal(premiereXml.match(/<linkclipref>video-clip-1<\/linkclipref>/g)?.length, 4)
 assert.equal(
@@ -129,7 +136,7 @@ async function testFileWriting(): Promise<void> {
     const writtenXml = await readFile(output.xmlPath, 'utf8')
     assert.match(writtenXml, /<xmeml version="4">/)
     assert.match(writtenXml, /<clipitem id="audio-track-2-clip-1">/)
-    assert.equal(writtenXml.match(/<parameterid>pan<\/parameterid>/g)?.length ?? 0, 0)
+    assert.equal(writtenXml.match(/<effectcategory>audiopan<\/effectcategory>/g)?.length ?? 0, 0)
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true })
   }
