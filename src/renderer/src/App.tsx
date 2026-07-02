@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AudioWaveform,
-  Check,
-  Download,
   Film,
   FolderOpen,
   Music2,
@@ -23,6 +21,10 @@ import { useI18n } from './context/I18nProvider'
 import { useSettings } from './context/SettingsProvider'
 import { getPresetLabel } from './i18n'
 import SettingsModal from './components/SettingsModal'
+import ExportPanel, {
+  type TimelineExportFormat,
+  type TimelineExportNle
+} from './components/ExportPanel'
 import TimelinePreview from './components/TimelinePreview'
 import WelcomeModal from './components/WelcomeModal'
 import {
@@ -36,9 +38,6 @@ import './styles/app.css'
 
 type LoadState = 'idle' | 'probing' | 'waveform' | 'detecting' | 'ready' | 'error'
 type ExportState = 'idle' | 'exporting' | 'success'
-type TimelineExportNle = 'resolve' | 'premiere'
-type ResolveTimelineFormat = 'otio' | 'xml'
-type PremiereTimelineFormat = 'otio' | 'xml'
 
 export default function App() {
   const { locale, t } = useI18n()
@@ -57,10 +56,10 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [exportState, setExportState] = useState<ExportState>('idle')
   const [exportNle, setExportNle] = useState<TimelineExportNle>(settings.exportNle)
-  const [resolveExportFormat, setResolveExportFormat] = useState<ResolveTimelineFormat>(
+  const [resolveExportFormat, setResolveExportFormat] = useState<TimelineExportFormat>(
     settings.resolveExportFormat
   )
-  const [premiereExportFormat, setPremiereExportFormat] = useState<PremiereTimelineFormat>(
+  const [premiereExportFormat, setPremiereExportFormat] = useState<TimelineExportFormat>(
     settings.premiereExportFormat
   )
   const [exportedPath, setExportedPath] = useState<string | null>(null)
@@ -251,16 +250,6 @@ export default function App() {
       setErrorMessage(t('errors.exportTimeline'))
     }
   }
-
-  const exportButtonLabel =
-    exportState === 'exporting'
-      ? t('export.inProgress')
-      : exportNle === 'resolve'
-        ? t('export.buttonResolve')
-        : t('export.buttonPremiere')
-
-  const exportSuccessNleLabel =
-    exportNle === 'resolve' ? t('export.successResolve') : t('export.successPremiere')
 
   const isLoading = loadState === 'probing' || loadState === 'detecting'
   const showVfrWarning = media?.video?.isVariableFrameRate === true
@@ -471,97 +460,27 @@ export default function App() {
                 />
               </section>
 
-              <section className="card">
-                <div className="export-layout">
-                  <div className="export-intro">
-                    <div className="section-heading">
-                      <span className="section-icon" aria-hidden><Download size={17} {...outlineIconProps} /></span>
-                      <h2>{t('export.title')}</h2>
-                    </div>
-                    <p className="hint">{t('export.hint')}</p>
-                  </div>
-                  <div className="export-controls">
-                <div className="field compact-field">
-                  <label htmlFor="export-nle">{t('export.nle')}</label>
-                  <select
-                    id="export-nle"
-                    className="select"
-                    value={exportNle}
-                    onChange={(event) => {
-                      const next = event.target.value as TimelineExportNle
-                      setExportNle(next)
-                      void updateSettings({ exportNle: next })
-                    }}
-                    disabled={exportState === 'exporting'}
-                  >
-                    <option value="resolve">{t('export.resolve')}</option>
-                    <option value="premiere">{t('export.premiere')}</option>
-                  </select>
-                </div>
-                {exportNle === 'resolve' && (
-                  <div className="field compact-field">
-                    <label htmlFor="resolve-format">{t('export.resolveFormat')}</label>
-                    <select
-                      id="resolve-format"
-                      className="select"
-                      value={resolveExportFormat}
-                      onChange={(event) => {
-                        const next = event.target.value as ResolveTimelineFormat
-                        setResolveExportFormat(next)
-                        void updateSettings({ resolveExportFormat: next })
-                      }}
-                      disabled={exportState === 'exporting'}
-                    >
-                      <option value="otio">{t('export.otioResolve')}</option>
-                      <option value="xml">{t('export.xmlResolve')}</option>
-                    </select>
-                  </div>
-                )}
-                {exportNle === 'premiere' && (
-                  <div className="field compact-field">
-                    <label htmlFor="premiere-format">{t('export.premiereFormat')}</label>
-                    <select
-                      id="premiere-format"
-                      className="select"
-                      value={premiereExportFormat}
-                      onChange={(event) => {
-                        const next = event.target.value as PremiereTimelineFormat
-                        setPremiereExportFormat(next)
-                        void updateSettings({ premiereExportFormat: next })
-                      }}
-                      disabled={exportState === 'exporting'}
-                    >
-                      <option value="otio">{t('export.otioPremiere')}</option>
-                      <option value="xml">{t('export.xmlPremiere')}</option>
-                    </select>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleExportTimeline}
-                  disabled={exportState === 'exporting'}
-                >
-                  <Download size={17} {...outlineIconProps} aria-hidden />
-                  {exportButtonLabel}
-                </button>
-                  </div>
-                </div>
-                {exportState === 'success' && exportedPath && (
-                  <p className="export-success" role="status">
-                    <Check size={16} {...outlineIconProps} aria-hidden />
-                    <span className="export-success-copy">
-                    {exportSuccessNleLabel} : <span>{exportedPath}</span>
-                    {exportedAudioDirectory && (
-                      <>
-                        <br />
-                        {t('export.audioTracks')} : <span>{exportedAudioDirectory}</span>
-                      </>
-                    )}
-                    </span>
-                  </p>
-                )}
-              </section>
+              <ExportPanel
+                nle={exportNle}
+                resolveFormat={resolveExportFormat}
+                premiereFormat={premiereExportFormat}
+                state={exportState}
+                exportedPath={exportedPath}
+                exportedAudioDirectory={exportedAudioDirectory}
+                onNleChange={(next) => {
+                  setExportNle(next)
+                  void updateSettings({ exportNle: next })
+                }}
+                onResolveFormatChange={(next) => {
+                  setResolveExportFormat(next)
+                  void updateSettings({ resolveExportFormat: next })
+                }}
+                onPremiereFormatChange={(next) => {
+                  setPremiereExportFormat(next)
+                  void updateSettings({ premiereExportFormat: next })
+                }}
+                onExport={() => void handleExportTimeline()}
+              />
             </>
           )}
         </>

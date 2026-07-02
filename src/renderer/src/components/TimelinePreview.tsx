@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react'
-import { Loader2, ChevronLeft, ChevronRight, Pause, Play, Square } from 'lucide-react'
 import {
   cutTimelineDuration,
   PLAYBACK_SAMPLE_RATE,
@@ -10,7 +9,16 @@ import type { KeepSegment } from '@core/models/keep-segment'
 import type { TimelinePreviewData } from '@core/models/timeline-preview'
 import { useI18n } from '../context/I18nProvider'
 import { formatDuration } from '../utils/format'
-import { filledIconProps } from '../utils/icons'
+import TimelineControls from './timeline/TimelineControls'
+import TimelineTrack from './timeline/TimelineTrack'
+import {
+  buildTimeTicks,
+  computePixelsPerSecond,
+  drawWindowWaveform,
+  peaksFromDecimatedEnvelope,
+  toX,
+  WAVE_LANE_HEIGHT
+} from './timeline/geometry'
 
 type TimelinePreviewProps = {
   data: TimelinePreviewData
@@ -27,171 +35,10 @@ type TimelinePreviewProps = {
 }
 
 const CHUNK_DURATION_SECONDS = 20
-const RULER_HEIGHT = 22
-const SEGMENT_BAR_HEIGHT = 10
-const WAVE_LANE_HEIGHT = 88
-const TRACK_HEIGHT = RULER_HEIGHT + SEGMENT_BAR_HEIGHT + WAVE_LANE_HEIGHT
-const WAVE_LANE_TOP = RULER_HEIGHT + SEGMENT_BAR_HEIGHT
-const TARGET_VISIBLE_SECONDS = 15
 const WAVE_AMPLITUDE = 0.92
 const PLAYHEAD_LEFT_MARGIN_RATIO = 0.06
 const PLAYHEAD_RIGHT_EDGE_RATIO = 0.94
 const PLAYBACK_LABEL_INTERVAL_MS = 100
-
-function formatTimeLabel(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) {
-    return '0s'
-  }
-
-  const totalSeconds = Math.floor(seconds)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const secs = totalSeconds % 60
-
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
-  }
-
-  if (minutes > 0) {
-    return `${minutes}:${String(secs).padStart(2, '0')}`
-  }
-
-  return `${secs}s`
-}
-
-function buildTimeTicks(durationSeconds: number, pixelsPerSecond: number): number[] {
-  if (durationSeconds <= 0) {
-    return [0]
-  }
-
-  let step = 10
-  if (pixelsPerSecond >= 20) {
-    step = 5
-  }
-  if (pixelsPerSecond >= 40) {
-    step = 2
-  }
-  if (pixelsPerSecond >= 60) {
-    step = 1
-  }
-
-  const ticks: number[] = []
-  for (let t = 0; t <= durationSeconds + step * 0.01; t += step) {
-    ticks.push(Math.min(t, durationSeconds))
-  }
-
-  if (ticks[ticks.length - 1] !== durationSeconds) {
-    ticks.push(durationSeconds)
-  }
-
-  return ticks
-}
-
-function toX(seconds: number, pixelsPerSecond: number): number {
-  return seconds * pixelsPerSecond
-}
-
-function computePixelsPerSecond(duration: number, viewportWidth: number): number {
-  if (viewportWidth <= 0) {
-    return 800 / TARGET_VISIBLE_SECONDS
-  }
-
-  if (duration <= 0) {
-    return viewportWidth / TARGET_VISIBLE_SECONDS
-  }
-
-  const targetPps = viewportWidth / TARGET_VISIBLE_SECONDS
-
-  if (duration * targetPps <= viewportWidth) {
-    return viewportWidth / duration
-  }
-
-  return targetPps
-}
-
-function readCssColor(variable: string, fallback: string): string {
-  const value = getComputedStyle(document.documentElement).getPropertyValue(variable).trim()
-  return value || fallback
-}
-
-function drawWindowWaveform(
-  canvas: HTMLCanvasElement,
-  peaks: number[],
-  viewportWidth: number,
-  maxHalfHeight: number
-): void {
-  const ctx = canvas.getContext('2d')
-  if (!ctx || peaks.length === 0 || viewportWidth <= 0) {
-    return
-  }
-
-  const dpr = window.devicePixelRatio || 1
-  const bitmapWidth = Math.ceil(viewportWidth)
-  canvas.width = Math.ceil(bitmapWidth * dpr)
-  canvas.height = Math.ceil(WAVE_LANE_HEIGHT * dpr)
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  ctx.clearRect(0, 0, bitmapWidth, WAVE_LANE_HEIGHT)
-  ctx.fillStyle = readCssColor('--color-timeline-waveform-bar', '#1e293b')
-
-  const waveMidY = WAVE_LANE_HEIGHT / 2
-  const columnCount = Math.min(peaks.length, bitmapWidth)
-  const barWidth = bitmapWidth / columnCount
-
-  for (let col = 0; col < columnCount; col++) {
-    const peak = peaks[col]
-    if (peak <= 0) {
-      continue
-    }
-
-    const halfHeight = Math.max(1, peak * maxHalfHeight)
-    const x = col * barWidth
-    const width = Math.max(1, barWidth - (barWidth > 2 ? 0.2 : 0))
-    ctx.fillRect(x, waveMidY - halfHeight, width, halfHeight * 2)
-  }
-}
-
-function peaksFromDecimatedEnvelope(
-  waveform: { peaks: number[]; bucketCount: number },
-  mediaDurationSeconds: number,
-  startSeconds: number,
-  endSeconds: number,
-  targetBucketCount: number
-): number[] {
-  if (
-    waveform.peaks.length === 0 ||
-    waveform.bucketCount <= 0 ||
-    mediaDurationSeconds <= 0 ||
-    endSeconds <= startSeconds ||
-    targetBucketCount <= 0
-  ) {
-    return []
-  }
-
-  const startBucket = Math.floor((startSeconds / mediaDurationSeconds) * waveform.bucketCount)
-  const endBucket = Math.min(
-    waveform.bucketCount,
-    Math.max(startBucket + 1, Math.ceil((endSeconds / mediaDurationSeconds) * waveform.bucketCount))
-  )
-  const windowPeaks = waveform.peaks.slice(startBucket, endBucket)
-  if (windowPeaks.length === 0) {
-    return []
-  }
-
-  if (windowPeaks.length === targetBucketCount) {
-    return windowPeaks
-  }
-
-  const resampled = new Array<number>(targetBucketCount)
-  for (let index = 0; index < targetBucketCount; index++) {
-    const sourceIndex = Math.min(
-      windowPeaks.length - 1,
-      Math.floor((index / targetBucketCount) * windowPeaks.length)
-    )
-    resampled[index] = windowPeaks[sourceIndex] ?? 0
-  }
-
-  return resampled
-}
 
 export default function TimelinePreview({
   data,
@@ -794,10 +641,6 @@ export default function TimelinePreview({
     seekToTimelinePosition(sourceTimeToTimelineTime(keepSegments, sourceSeconds))
   }
 
-  const nudgeScroll = (delta: number) => {
-    handleSliderChange(scrollLeft + delta)
-  }
-
   const waveformLeft = scrollLeft
   const showNavigator = maxScroll > 4
   const canPlay = cutDuration > 0 && audioStreamIndices.length > 0
@@ -836,204 +679,39 @@ export default function TimelinePreview({
           role="region"
           aria-label={t('preview.ariaRegion')}
         >
-          <div className="timeline-canvas" style={{ width: canvasWidth }}>
-            <svg
-              className="timeline-track"
-              width={canvasWidth}
-              height={TRACK_HEIGHT}
-              viewBox={`0 0 ${canvasWidth} ${TRACK_HEIGHT}`}
-              preserveAspectRatio="none"
-              role="img"
-              aria-hidden="true"
-            >
-              <rect
-                x={0}
-                y={0}
-                width={canvasWidth}
-                height={RULER_HEIGHT}
-                className="timeline-ruler-background"
-              />
-              <line
-                x1={0}
-                y1={RULER_HEIGHT - 0.5}
-                x2={canvasWidth}
-                y2={RULER_HEIGHT - 0.5}
-                className="timeline-ruler-baseline"
-              />
-              {ticks.map((tick, index) => {
-                const x = toX(tick, pixelsPerSecond)
-                return (
-                  <g key={`ruler-${index}`}>
-                    <line
-                      x1={x}
-                      y1={RULER_HEIGHT - 8}
-                      x2={x}
-                      y2={RULER_HEIGHT}
-                      className="timeline-ruler-tick"
-                    />
-                    <text
-                      x={x}
-                      y={12}
-                      className="timeline-ruler-label"
-                      textAnchor={index === 0 ? 'start' : index === ticks.length - 1 ? 'end' : 'middle'}
-                    >
-                      {formatTimeLabel(tick)}
-                    </text>
-                  </g>
-                )
-              })}
-
-              {cutRegions.map((region, index) => (
-                <rect
-                  key={`cut-bar-${index}`}
-                  x={toX(region.startSeconds, pixelsPerSecond)}
-                  y={RULER_HEIGHT}
-                  width={Math.max(1, toX(region.endSeconds - region.startSeconds, pixelsPerSecond))}
-                  height={SEGMENT_BAR_HEIGHT}
-                  className="timeline-cut-marker"
-                />
-              ))}
-
-              {keepRegions.map((region, index) => (
-                <rect
-                  key={`keep-bar-${index}`}
-                  x={toX(region.startSeconds, pixelsPerSecond)}
-                  y={RULER_HEIGHT}
-                  width={Math.max(1, toX(region.endSeconds - region.startSeconds, pixelsPerSecond))}
-                  height={SEGMENT_BAR_HEIGHT}
-                  className="timeline-keep-marker"
-                />
-              ))}
-
-              <rect
-                x={0}
-                y={WAVE_LANE_TOP}
-                width={canvasWidth}
-                height={WAVE_LANE_HEIGHT}
-                className="timeline-background"
-              />
-
-              {cutRegions.map((region, index) => (
-                <rect
-                  key={`cut-fill-${index}`}
-                  x={toX(region.startSeconds, pixelsPerSecond)}
-                  y={WAVE_LANE_TOP}
-                  width={Math.max(1, toX(region.endSeconds - region.startSeconds, pixelsPerSecond))}
-                  height={WAVE_LANE_HEIGHT}
-                  className="timeline-cut-zone"
-                />
-              ))}
-
-              {keepRegions.map((region, index) => (
-                <rect
-                  key={`keep-fill-${index}`}
-                  x={toX(region.startSeconds, pixelsPerSecond)}
-                  y={WAVE_LANE_TOP}
-                  width={Math.max(1, toX(region.endSeconds - region.startSeconds, pixelsPerSecond))}
-                  height={WAVE_LANE_HEIGHT}
-                  className="timeline-keep-zone"
-                />
-              ))}
-            </svg>
-
-            {viewportWidth > 0 && (
-              <canvas
-                ref={waveformCanvasRef}
-                className="timeline-waveform-canvas"
-                style={{
-                  top: WAVE_LANE_TOP,
-                  left: waveformLeft,
-                  width: viewportWidth,
-                  height: WAVE_LANE_HEIGHT
-                }}
-                aria-hidden="true"
-              />
-            )}
-
-            <div ref={playheadRef} className="timeline-playhead" aria-hidden="true" />
-          </div>
+          <TimelineTrack
+            canvasWidth={canvasWidth}
+            pixelsPerSecond={pixelsPerSecond}
+            ticks={ticks}
+            cutRegions={cutRegions}
+            keepRegions={keepRegions}
+            viewportWidth={viewportWidth}
+            waveformLeft={waveformLeft}
+            waveformCanvasRef={waveformCanvasRef}
+            playheadRef={playheadRef}
+          />
         </div>
 
-        <div className="timeline-controls">
-          <div className="timeline-transport">
-            <button
-              type="button"
-              className="btn timeline-transport-button timeline-transport-button--icon"
-              onClick={() =>
-                isPlayingRef.current && !isPlaybackPreparing
-                  ? pausePlayback()
-                  : void startPlayback(playbackPositionSeconds)
-              }
-              disabled={!canPlay || isPlaybackPreparing}
-              aria-label={
-                isPlaybackPreparing
-                  ? t('preview.transportPrepare')
-                  : isPlaying
-                    ? t('preview.transportPause')
-                    : t('preview.transportPlay')
-              }
-              aria-busy={isPlaybackPreparing}
-            >
-              {isPlaybackPreparing ? (
-                <Loader2 size={18} className="timeline-transport-spinner" aria-hidden />
-              ) : isPlaying ? (
-                <Pause size={18} {...filledIconProps} aria-hidden />
-              ) : (
-                <Play size={18} {...filledIconProps} aria-hidden />
-              )}
-            </button>
-            <button
-              type="button"
-              className="btn timeline-transport-button timeline-transport-button--icon"
-              onClick={stopPlayback}
-              disabled={!canPlay}
-              aria-label={t('preview.transportStop')}
-            >
-              <Square size={14} {...filledIconProps} aria-hidden />
-            </button>
-          </div>
-
-          {showNavigator && (
-            <div className="timeline-nav">
-              <button
-                type="button"
-                className="btn timeline-scroll-button timeline-scroll-button--icon"
-                onClick={() => nudgeScroll(-viewportWidth * 0.5)}
-                aria-label={t('preview.scrollLeft')}
-              >
-                <ChevronLeft size={18} {...filledIconProps} aria-hidden />
-              </button>
-              <input
-                id="timeline-position"
-                type="range"
-                className="timeline-nav-slider"
-                min={0}
-                max={maxScroll}
-                step={1}
-                value={scrollLeft}
-                onChange={(e) => handleSliderChange(Number(e.target.value))}
-                aria-label={t('preview.positionSlider')}
-              />
-              <button
-                type="button"
-                className="btn timeline-scroll-button timeline-scroll-button--icon"
-                onClick={() => nudgeScroll(viewportWidth * 0.5)}
-                aria-label={t('preview.scrollRight')}
-              >
-                <ChevronRight size={18} {...filledIconProps} aria-hidden />
-              </button>
-            </div>
-          )}
-
-          <div className="timeline-playback-meta">
-            <span className="timeline-nav-time">
-              {formatTimeLabel(viewStartSeconds)} – {formatTimeLabel(viewEndSeconds)}
-            </span>
-            <span className="timeline-playback-time">
-              {formatDuration(playbackPositionSeconds, locale)} / {formatDuration(cutDuration, locale)}
-            </span>
-          </div>
-        </div>
+        <TimelineControls
+          canPlay={canPlay}
+          isPlaying={isPlaying}
+          isPlaybackPreparing={isPlaybackPreparing}
+          showNavigator={showNavigator}
+          viewportWidth={viewportWidth}
+          maxScroll={maxScroll}
+          scrollLeft={scrollLeft}
+          viewStartSeconds={viewStartSeconds}
+          viewEndSeconds={viewEndSeconds}
+          playbackPositionSeconds={playbackPositionSeconds}
+          cutDuration={cutDuration}
+          onPlayPause={() =>
+            isPlayingRef.current && !isPlaybackPreparing
+              ? pausePlayback()
+              : void startPlayback(playbackPositionSeconds)
+          }
+          onStop={stopPlayback}
+          onScrollChange={handleSliderChange}
+        />
       </div>
 
       {playbackError && <p className="timeline-playback-error">{playbackError}</p>}
