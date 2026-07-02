@@ -13,6 +13,7 @@ import { probeMedia } from '../ffmpeg/probe'
 import { extractWaveformEnvelope } from '../ffmpeg/waveform'
 import { writeResolveOtio, writeResolveXml } from '../export/resolve-xml'
 import { writePremiereOtio, writePremiereXml } from '../export/premiere-xml'
+import { dialogMessage } from '../i18n/dialogs'
 import { registerBootstrapHandlers } from './bootstrap-handlers'
 import { registerSettingsHandlers } from './settings-handlers'
 
@@ -30,7 +31,7 @@ export function registerIpcHandlers(): void {
     const window = BrowserWindow.getFocusedWindow()
     const options: OpenDialogOptions = {
       properties: ['openFile'],
-      filters: [{ name: 'Vidéo', extensions: ['mp4'] }]
+      filters: [{ name: dialogMessage('openVideoFilter'), extensions: ['mp4'] }]
     }
 
     const result = window
@@ -154,8 +155,10 @@ export function registerIpcHandlers(): void {
       const extension = isOtio ? 'otio' : 'xml'
       const nleSlug = isResolve ? 'resolve' : 'premiere'
       const options: SaveDialogOptions = {
-        title: isResolve ? 'Exporter pour DaVinci Resolve' : 'Exporter pour Premiere Pro',
-        buttonLabel: 'Enregistrer',
+        title: isResolve
+          ? dialogMessage('exportResolveTitle')
+          : dialogMessage('exportPremiereTitle'),
+        buttonLabel: dialogMessage('exportSave'),
         defaultPath: join(
           parse(payload.media.filePath).dir,
           `${sourceName}-${nleSlug}.${extension}`
@@ -163,13 +166,15 @@ export function registerIpcHandlers(): void {
         filters: isOtio
           ? [
               {
-                name: isResolve ? 'Timeline Resolve OTIO' : 'Timeline Premiere OTIO',
+                name: isResolve
+                  ? dialogMessage('filterResolveOtio')
+                  : dialogMessage('filterPremiereOtio'),
                 extensions: ['otio']
               }
             ]
           : isResolve
-            ? [{ name: 'Timeline Resolve XML', extensions: ['xml'] }]
-            : [{ name: 'Timeline Premiere Pro XML', extensions: ['xml'] }]
+            ? [{ name: dialogMessage('filterResolveXml'), extensions: ['xml'] }]
+            : [{ name: dialogMessage('filterPremiereXml'), extensions: ['xml'] }]
       }
       const result = window
         ? await dialog.showSaveDialog(window, options)
