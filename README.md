@@ -47,9 +47,10 @@
 
 - Windows 10 and 11 only
 - Unsigned installer; Windows SmartScreen may require additional confirmation
-- `ffmpeg` and `ffprobe` must be installed separately and available on `PATH`
 - MP4 input only
 - Automatic updates require a GitHub release newer than the installed version
+
+The Windows installer bundles ffmpeg and ffprobe. Building from source still requires both tools on `PATH`.
 
 ---
 
@@ -59,15 +60,10 @@ Installers are published on [GitHub Releases](https://github.com/Palawizard/sile
 
 | File | Description |
 | --- | --- |
-| `Silence-Splitter-*-x64-setup.exe` | Windows NSIS installer for the current user |
+| `Silence-Splitter-*-x64-setup.exe` | Windows NSIS installer for the current user (includes ffmpeg) |
 | `latest.yml` | Automatic update metadata |
 
-Before opening Silence Splitter, install [ffmpeg](https://ffmpeg.org/download.html) and verify that both commands are available:
-
-```powershell
-ffmpeg -version
-ffprobe -version
-```
+No separate ffmpeg install is required for the packaged app.
 
 ---
 
@@ -156,7 +152,7 @@ The analysis mix is temporary. Exported timelines always reference the original 
 | --- | --- |
 | Desktop shell | Electron 43 and electron-vite |
 | Frontend | React 19 and strict TypeScript |
-| Media | System ffmpeg and ffprobe processes |
+| Media | Bundled ffmpeg and ffprobe in packaged builds; system PATH in development |
 | Export | OpenTimelineIO JSON and FCP7 XML |
 | Packaging | electron-builder with NSIS |
 | Updates | electron-updater and GitHub Releases |

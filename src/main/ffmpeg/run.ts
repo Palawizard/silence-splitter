@@ -1,13 +1,21 @@
 import { execFile, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
+import { resolveFfmpegBinary, type FfmpegBinaryName } from './resolve-binary'
 
 const execFileAsync = promisify(execFile)
+
+function resolveBinary(binary: string): string {
+  if (binary === 'ffmpeg' || binary === 'ffprobe') {
+    return resolveFfmpegBinary(binary as FfmpegBinaryName)
+  }
+  return binary
+}
 
 export async function runCommand(
   binary: string,
   args: string[]
 ): Promise<{ stdout: string; stderr: string }> {
-  const { stdout, stderr } = await execFileAsync(binary, args, {
+  const { stdout, stderr } = await execFileAsync(resolveBinary(binary), args, {
     maxBuffer: 50 * 1024 * 1024
   })
   return { stdout: stdout.toString(), stderr: stderr.toString() }
@@ -15,7 +23,7 @@ export async function runCommand(
 
 export function runCommandBuffer(binary: string, args: string[]): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(resolveBinary(binary), args, { stdio: ['ignore', 'pipe', 'pipe'] })
     const chunks: Buffer[] = []
     let stderr = ''
 
@@ -45,7 +53,7 @@ export function runCommandChunks(
   onChunk: (chunk: Buffer) => void
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(resolveBinary(binary), args, { stdio: ['ignore', 'pipe', 'pipe'] })
     let stderr = ''
 
     child.stdout.on('data', (chunk: Buffer) => {

@@ -21,6 +21,17 @@ async function main(): Promise<void> {
     await access(resolve(asset))
   }
 
+  const extraResources = JSON.stringify(packageConfig.build?.extraResources ?? [])
+  if (!extraResources.includes('resources/ffmpeg')) {
+    throw new Error('Missing bundled ffmpeg extraResources configuration')
+  }
+
+  if (!packageConfig.scripts['ensure:ffmpeg']) {
+    throw new Error('Missing ensure:ffmpeg script')
+  }
+
+  await access(resolve('src/main/ffmpeg/resolve-binary.ts'))
+
   if (
     packageConfig.version !== '1.0.0-beta.1' ||
     packageConfig.build?.appId !== 'com.palawizard.silence-splitter' ||

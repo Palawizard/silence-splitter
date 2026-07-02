@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { resolveFfmpegBinary } from './resolve-binary'
 
 const execFileAsync = promisify(execFile)
 
@@ -7,9 +8,9 @@ export async function checkFfmpegAvailable(): Promise<{
   ffmpeg: boolean
   ffprobe: boolean
 }> {
-  const check = async (binary: string): Promise<boolean> => {
+  const check = async (binary: 'ffmpeg' | 'ffprobe'): Promise<boolean> => {
     try {
-      await execFileAsync(binary, ['-version'])
+      await execFileAsync(resolveFfmpegBinary(binary), ['-version'])
       return true
     } catch {
       return false

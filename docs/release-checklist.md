@@ -12,7 +12,8 @@
 
 - [ ] Install the generated NSIS package for the current user.
 - [ ] Confirm the app icon in the installer, Start menu, taskbar, window, and executable.
-- [ ] Confirm startup with ffmpeg present and the localized error with ffmpeg absent.
+- [ ] Confirm startup works in the packaged app without a system ffmpeg install.
+- [ ] Confirm the localized error still appears if bundled ffmpeg files are missing.
 - [ ] Import representative OTIO and XML exports in Resolve and Premiere Pro.
 - [ ] Confirm video links, every source audio stream, stereo routing, and cut boundaries.
 - [ ] Install the previous release, publish the candidate, and verify download plus restart into the new version.
