@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Settings } from 'lucide-react'
 import type { KeepSegment } from '@core/models/keep-segment'
 import type { MediaInfo } from '@core/models/media-info'
 import type { TimelinePreviewData } from '@core/models/timeline-preview'
@@ -239,8 +240,21 @@ export default function App() {
 
   return (
     <div className="app">
-      <h1>Silence Splitter</h1>
-      <p className="subtitle">Détecte les silences et exporte une timeline pour le montage.</p>
+      <header className="app-header">
+        <div className="app-header-text">
+          <h1>Silence Splitter</h1>
+          <p className="subtitle">Détecte les silences et exporte une timeline pour le montage.</p>
+        </div>
+        <button
+          type="button"
+          className="btn settings-entry"
+          aria-label="Paramètres"
+          title="Paramètres"
+          disabled
+        >
+          <Settings size={18} strokeWidth={2} aria-hidden />
+        </button>
+      </header>
 
       {!ffmpegOk && (
         <div className="banner" role="alert">
@@ -273,6 +287,12 @@ export default function App() {
           </p>
         )}
       </section>
+
+      {!media && ffmpegOk && loadState === 'idle' && (
+        <section className="card card-empty">
+          <p className="muted">Choisissez un fichier MP4 pour commencer l&apos;analyse.</p>
+        </section>
+      )}
 
       {media && (
         <>
