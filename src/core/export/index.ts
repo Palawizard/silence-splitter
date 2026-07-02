@@ -1,4 +1,5 @@
 import { davinciResolveExporter } from './resolve'
+import { premiereProExporter } from './premiere'
 
 export { buildTimelineExportModel, createTimelineRate } from './timeline-model'
 export type {
@@ -13,7 +14,7 @@ export type {
   XmlExporter
 } from './types'
 
-export const exporters = [davinciResolveExporter]
+export const exporters = [davinciResolveExporter, premiereProExporter]
 
 export function getExporter(format: string) {
   const exporter = exporters.find((e) => e.format === format)
