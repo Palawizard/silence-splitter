@@ -4,6 +4,7 @@
 
 - [ ] Confirm the release commit is on `main` and CI is green.
 - [ ] Confirm `package.json` and `CHANGELOG.md` use the intended version.
+- [ ] Add `.github/release-notes/v<version>.md` with clear English release notes (Added, Known limitations, CHANGELOG link).
 - [ ] Run `npm ci`, `npm run typecheck`, `npm test`, and `npm run dist` on Windows.
 - [ ] Run `npm run test:timebolt` on the workstation with trusted local references.
 
@@ -22,7 +23,7 @@
 - [ ] Merge the approved release commit from `dev` to `main`.
 - [ ] Create and push an annotated tag matching `v<version>`.
 - [ ] Confirm the Release workflow uploads the installer, blockmap, and `latest.yml`.
-- [ ] Review generated release notes and keep the GitHub release marked as a prerelease.
+- [ ] Review the published release notes and confirm the release is not marked as a prerelease.
 - [ ] Download the published installer and verify its SHA-256 checksum locally.
 
 ## After release

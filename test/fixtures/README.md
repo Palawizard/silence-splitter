@@ -1,4 +1,4 @@
-# Media fixtures — Epic 1
+# Media fixtures - Epic 1
 
 Fixtures are local MP4 files used to validate probe, track selection, VFR warnings, and later XML export. They are **not** committed to the repository (binary media).
 
@@ -65,18 +65,18 @@ ffprobe -v error -show_entries stream=r_frame_rate,avg_frame_rate -select_stream
 
 ## Manual test checklist (Epic 1)
 
-Dernière exécution : **2026-07-01** — voir aussi `scripts/test-epic1.ts`.
+Dernière exécution : **2026-07-01** - voir aussi `scripts/test-epic1.ts`.
 
-- [x] **single-track.mp4** — duration, fps, resolution shown; one audio track, checked by default; waveform ready message
-- [x] **multi-track.mp4** — all audio tracks listed and checked by default; unchecking one track re-extracts waveform
-- [x] **variable-fps.mp4** — VFR logic verified (unit tests); synthetic fixture is CFR — use real VFR media for UI banner check
+- [x] **single-track.mp4** - duration, fps, resolution shown; one audio track, checked by default; waveform ready message
+- [x] **multi-track.mp4** - all audio tracks listed and checked by default; unchecking one track re-extracts waveform
+- [x] **variable-fps.mp4** - VFR logic verified (unit tests); synthetic fixture is CFR - use real VFR media for UI banner check
 - [x] File path with spaces imports without error
 - [x] Missing ffmpeg shows startup error banner
 
 ## Pipeline separation (Epic 2)
 
 - **Audio track selection** affects the analysis mix only (ffmpeg `amix` of selected streams).
-- **Exports** (Epic 3+) always reference the original source MP4 path — never a derived analysis file.
+- **Exports** (Epic 3+) always reference the original source MP4 path - never a derived analysis file.
 - **Timeline preview** is read-only and derived from the same `KeepSegment[]` as XML export.
 
 ## Notes

@@ -30,21 +30,25 @@ jobs:
           if ("${{ github.ref_name }}" -ne "v$version") {
             throw "Tag ${{ github.ref_name }} does not match package version $version"
           }
+      - name: Verify release notes exist
+        shell: pwsh
+        run: |
+          $notesPath = ".github/release-notes/${{ github.ref_name }}.md"
+          if (-not (Test-Path $notesPath)) {
+            throw "Release notes file not found: $notesPath. Add it before tagging."
+          }
       - run: npm run typecheck
       - run: npm test
       - run: npm run dist
-      - name: Publish prerelease assets
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          $version = (Get-Content package.json | ConvertFrom-Json).version
-          gh release create "v$version" `
-            "dist/Silence-Splitter-$version-x64-setup.exe" `
-            "dist/Silence-Splitter-$version-x64-setup.exe.blockmap" `
-            "dist/latest.yml" `
-            --repo "${{ github.repository }}" `
-            --target main `
-            --title "$version" `
-            --generate-notes `
-            --prerelease
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Silence Splitter - ${{ github.ref_name }}
+          body_path: .github/release-notes/${{ github.ref_name }}.md
+          files: |
+            dist/Silence-Splitter-*-x64-setup.exe
+            dist/Silence-Splitter-*-x64-setup.exe.blockmap
+            dist/latest.yml
+          prerelease: false
+          fail_on_unmatched_files: true
