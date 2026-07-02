@@ -81,6 +81,34 @@ def probe_audio_channels(media_path: Path) -> list[int]:
     return [int(stream.get("channels", 0)) for stream in streams]
 
 
+def decoded_audio_hash(media_path: Path, map_specifier: str) -> str:
+    result = subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-i",
+            str(media_path),
+            "-map",
+            map_specifier,
+            "-t",
+            "5",
+            "-c:a",
+            "pcm_s16le",
+            "-f",
+            "hash",
+            "-hash",
+            "md5",
+            "-",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    return result.stdout.strip()
+
+
 def validate_xml(xml_path: Path, verification: Verification) -> dict[str, object]:
     root = ET.parse(xml_path).getroot()
     sequence = root.find("sequence")
@@ -97,6 +125,16 @@ def validate_xml(xml_path: Path, verification: Verification) -> dict[str, object
     media_path = file_url_to_path(path_url)
     channels_per_stream = probe_audio_channels(media_path)
     expected_audio_tracks = sum(channels_per_stream)
+    expected_track_sources = [
+        (stream_index, channel_index)
+        for stream_index, channel_count in enumerate(channels_per_stream, start=1)
+        for channel_index in range(1, channel_count + 1)
+    ]
+    file_paths_by_id = {
+        file_element.attrib["id"]: file_url_to_path(file_element.findtext("pathurl", ""))
+        for file_element in sequence.findall(".//file")
+        if file_element.attrib.get("id") and file_element.findtext("pathurl")
+    }
 
     verification.check(media_path.is_file(), f"source media exists: {media_path}")
     verification.check(len(video_tracks) == 1, "XML contains exactly one video track")
@@ -104,12 +142,14 @@ def validate_xml(xml_path: Path, verification: Verification) -> dict[str, object
     verification.check(
         len(audio_tracks) == expected_audio_tracks,
         f"XML contains {expected_audio_tracks} audio channel tracks "
-        f"({channels_per_stream} channels per source stream)",
+        f"({channels_per_stream} channels per stream)",
     )
-
     video_timings = [timing(item) for item in video_items]
     source_track_indices: list[int] = []
+    sidecar_paths: list[Path] = []
+    verified_sidecar_streams: set[int] = set()
     for track_index, track in enumerate(audio_tracks, start=1):
+        stream_order, channel_index = expected_track_sources[track_index - 1]
         items = as_list(track, "clipitem")
         verification.check(
             [timing(item) for item in items] == video_timings,
@@ -121,36 +161,49 @@ def validate_xml(xml_path: Path, verification: Verification) -> dict[str, object
             if (source_track := item.find("sourcetrack")) is not None
         }
         verification.check(
-            indices == {track_index},
-            f"XML audio track {track_index} maps source channel {track_index}",
+            indices == {channel_index},
+            f"XML audio track {track_index} maps sidecar channel {channel_index}",
         )
         source_track_indices.extend(indices)
 
+        first_file = track.find("clipitem/file")
+        file_id = first_file.attrib.get("id") if first_file is not None else None
+        sidecar_path = file_paths_by_id.get(file_id or "")
+        if sidecar_path is None:
+            verification.check(False, f"XML audio track {track_index} has a sidecar path")
+            continue
+        sidecar_paths.append(sidecar_path)
+        sidecar_channels = probe_audio_channels(sidecar_path) if sidecar_path.is_file() else []
+        expected_channels = channels_per_stream[stream_order - 1]
+        verification.check(
+            sidecar_path.is_file(),
+            f"audio sidecar {stream_order} exists: {sidecar_path}",
+        )
+        verification.check(
+            sidecar_channels == [expected_channels],
+            f"audio sidecar {stream_order} contains one {expected_channels}-channel stream",
+        )
+        if sidecar_path.is_file() and stream_order not in verified_sidecar_streams:
+            verification.check(
+                decoded_audio_hash(media_path, f"0:a:{stream_order - 1}")
+                == decoded_audio_hash(sidecar_path, "0:a:0"),
+                f"audio sidecar {stream_order} matches original source stream {stream_order}",
+            )
+            verified_sidecar_streams.add(stream_order)
+
     verification.check(
-        sorted(source_track_indices) == list(range(1, expected_audio_tracks + 1)),
-        "XML maps each source audio channel exactly once",
+        source_track_indices == [channel for _stream, channel in expected_track_sources],
+        "XML maps every sidecar channel exactly once",
+    )
+    verification.check(
+        len(set(sidecar_paths)) == len(channels_per_stream),
+        "XML references a distinct sidecar for every source audio stream",
     )
 
-    expected_link_map: list[tuple[int, int]] = []
-    source_channel_index = 0
-    for group_index, channel_count in enumerate(channels_per_stream, start=1):
-        for _channel in range(channel_count):
-            source_channel_index += 1
-            expected_link_map.append((source_channel_index, group_index))
-    link_maps = []
-    for item in video_items:
-        audio_links = [
-            link for link in item.findall("link") if link.findtext("mediatype") == "audio"
-        ]
-        link_maps.append(
-            [
-                (text_int(link, "trackindex"), text_int(link, "groupindex"))
-                for link in audio_links
-            ]
-        )
+    expected_link_count = expected_audio_tracks + 1
     verification.check(
-        all(link_map == expected_link_map for link_map in link_maps),
-        "XML groups source channels by their original audio stream",
+        all(len(item.findall("link/linkclipref")) == expected_link_count for item in video_items),
+        "XML links video with every original audio stream",
     )
 
     timebase = int(sequence.findtext("./rate/timebase", "0"))
@@ -159,8 +212,12 @@ def validate_xml(xml_path: Path, verification: Verification) -> dict[str, object
     return {
         "name": sequence.findtext("name", ""),
         "media_path": media_path,
+        "audio_paths": sidecar_paths,
         "video_timings": video_timings,
         "expected_audio_tracks": expected_audio_tracks,
+        "expected_audio_subtypes": [
+            "mono" for _stream, _channel in expected_track_sources
+        ],
         "frame_rate": frame_rate,
     }
 
@@ -270,6 +327,22 @@ def validate_resolve(expected: dict[str, object], verification: Verification) ->
             [resolve_item_timing(item) for item in items] == actual_video_timings,
             f"Resolve audio track {track_index} matches every video cut",
         )
+        expected_subtype = expected["expected_audio_subtypes"][track_index - 1]
+        if expected_subtype is not None:
+            verification.check(
+                timeline.GetTrackSubType("audio", track_index) == expected_subtype,
+                f"Resolve audio track {track_index} is {expected_subtype}",
+            )
+
+        media_paths = {
+            Path(item.GetMediaPoolItem().GetClipProperty("File Path"))
+            for item in items
+            if item.GetMediaPoolItem()
+        }
+        verification.check(
+            media_paths == {expected["audio_paths"][track_index - 1]},
+            f"Resolve audio track {track_index} references the expected sidecar",
+        )
 
     actual_rate = float(project.GetSetting("timelineFrameRate"))
     verification.check(
@@ -286,11 +359,17 @@ def main() -> int:
         action="store_true",
         help="Also validate the current timeline through the Resolve scripting API",
     )
+    parser.add_argument(
+        "--timeline-name",
+        help="Override the expected Resolve timeline name",
+    )
     args = parser.parse_args()
 
     verification = Verification()
     try:
         expected = validate_xml(args.xml.resolve(), verification)
+        if args.timeline_name:
+            expected["name"] = args.timeline_name
         if args.resolve:
             validate_resolve(expected, verification)
     except (OSError, ValueError, RuntimeError, ET.ParseError, subprocess.SubprocessError) as error:
