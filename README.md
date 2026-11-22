@@ -11,8 +11,6 @@
 
 [Features](#features) | [Download](#download) | [Quick start](#quick-start) | [Architecture](#architecture) | [Verification](#verification)
 
----
-
 ## Features
 
 ### Silence detection
@@ -52,8 +50,6 @@
 
 The Windows installer bundles ffmpeg and ffprobe. Building from source still requires both tools on `PATH`.
 
----
-
 ## Download
 
 Installers are published on [GitHub Releases](https://github.com/Palawizard/silence-splitter/releases).
@@ -64,8 +60,6 @@ Installers are published on [GitHub Releases](https://github.com/Palawizard/sile
 | `latest.yml` | Automatic update metadata |
 
 No separate ffmpeg install is required for the packaged app.
-
----
 
 ## Quick start
 
@@ -103,8 +97,6 @@ npm run dist
 
 The installer and update metadata are generated in `dist/`.
 
----
-
 ## Useful scripts
 
 | Command | Description |
@@ -117,8 +109,6 @@ The installer and update metadata are generated in `dist/`.
 | `npm run icons` | Generate PNG and ICO assets from the SVG source |
 | `npm run fixtures` | Generate synthetic local MP4 regression fixtures |
 | `npm run dist` | Build the x64 Windows NSIS installer |
-
----
 
 ## Architecture
 
@@ -144,8 +134,6 @@ MP4 -> ffprobe metadata -> selected audio tracks -> silence detection
 
 The analysis mix is temporary. Exported timelines always reference the original video and codec-copy audio sidecars.
 
----
-
 ## Tech stack
 
 | Layer | Technology |
@@ -158,8 +146,6 @@ The analysis mix is temporary. Exported timelines always reference the original 
 | Updates | electron-updater and GitHub Releases |
 | Quality | TypeScript checks, regression scripts, GitHub Actions |
 
----
-
 ## Security and privacy
 
 - All media processing runs locally.
@@ -168,8 +154,6 @@ The analysis mix is temporary. Exported timelines always reference the original 
 - Browser windows use context isolation with Node.js disabled in the renderer.
 
 See [SECURITY.md](SECURITY.md) to report a vulnerability.
-
----
 
 ## Verification
 
@@ -182,8 +166,6 @@ npm run dist
 
 TimeBolt reference media is intentionally machine-local. Run `npm run test:timebolt` on the development workstation when changing silence detection. Installer behavior, SmartScreen, NLE imports, and a two-version automatic update must also be verified manually before release.
 
----
-
 ## Contributing and releases
 
 - Integration branch: `dev`
@@ -193,12 +175,8 @@ TimeBolt reference media is intentionally machine-local. Run `npm run test:timeb
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
 
----
-
 ## License
 
 Distributed under the [GNU General Public License v3.0](LICENSE).
-
----
 
 Silence Splitter | Beta | Windows 10/11
